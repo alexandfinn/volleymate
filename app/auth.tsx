@@ -1,25 +1,38 @@
-import { AntDesign } from '@expo/vector-icons';
-import * as AppleAuthentication from 'expo-apple-authentication';
-import { router } from 'expo-router';
-import React, { useEffect, useState } from 'react';
-import { ActivityIndicator, Platform, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
-import { useAuth } from '../contexts/auth';
-import { supabase } from '../lib/supabase';
+import { AntDesign } from "@expo/vector-icons";
+import * as AppleAuthentication from "expo-apple-authentication";
+import { router } from "expo-router";
+import React, { useEffect, useState } from "react";
+import {
+  ActivityIndicator,
+  Platform,
+  StyleSheet,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View,
+} from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
+import { useAuth } from "../contexts/auth";
+import { supabase } from "../lib/supabase";
 
 export default function AuthScreen() {
-  const { signInWithGoogle, signInWithApple, loading: authLoading, user } = useAuth();
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
+  const {
+    signInWithGoogle,
+    signInWithApple,
+    loading: authLoading,
+    user,
+  } = useAuth();
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState('');
+  const [error, setError] = useState("");
   const [isSignUp, setIsSignUp] = useState(false);
-  const [success, setSuccess] = useState('');
+  const [success, setSuccess] = useState("");
 
   // If already authenticated, redirect to home
   useEffect(() => {
     if (user) {
-      router.replace('/');
+      router.replace("/");
     }
   }, [user]);
 
@@ -31,34 +44,34 @@ export default function AuthScreen() {
           AppleAuthentication.AppleAuthenticationScope.EMAIL,
         ],
       });
-      
+
       // Sign in via Supabase Auth.
       if (credential.identityToken) {
         const {
           error,
           data: { user },
         } = await supabase.auth.signInWithIdToken({
-          provider: 'apple',
+          provider: "apple",
           token: credential.identityToken,
         });
-        
+
         if (error) throw error;
       } else {
-        throw new Error('No identityToken.');
+        throw new Error("No identityToken.");
       }
     } catch (e: any) {
-      if (e.code === 'ERR_REQUEST_CANCELED') {
+      if (e.code === "ERR_REQUEST_CANCELED") {
         // User canceled the sign-in flow
       } else {
-        console.error('Apple authentication error:', e);
+        console.error("Apple authentication error:", e);
       }
     }
   };
 
   const handleEmailAuth = async () => {
     setLoading(true);
-    setError('');
-    setSuccess('');
+    setError("");
+    setSuccess("");
     try {
       if (isSignUp) {
         const { data, error } = await supabase.auth.signUp({
@@ -68,7 +81,7 @@ export default function AuthScreen() {
         if (error) {
           setError(error.message);
         } else {
-          setSuccess('Check your email to confirm your account.');
+          setSuccess("Check your email to confirm your account.");
         }
       } else {
         const { data, error } = await supabase.auth.signInWithPassword({
@@ -80,7 +93,7 @@ export default function AuthScreen() {
         }
       }
     } catch (err: any) {
-      setError(err.message || 'An error occurred');
+      setError(err.message || "An error occurred");
     } finally {
       setLoading(false);
     }
@@ -127,12 +140,22 @@ export default function AuthScreen() {
           {loading ? (
             <ActivityIndicator color="#fff" />
           ) : (
-            <Text style={styles.buttonText}>{isSignUp ? 'Sign up with Email' : 'Sign in with Email'}</Text>
+            <Text style={styles.buttonText}>
+              {isSignUp ? "Sign up with Email" : "Sign in with Email"}
+            </Text>
           )}
         </TouchableOpacity>
-        <TouchableOpacity onPress={() => { setIsSignUp(!isSignUp); setError(''); setSuccess(''); }}>
+        <TouchableOpacity
+          onPress={() => {
+            setIsSignUp(!isSignUp);
+            setError("");
+            setSuccess("");
+          }}
+        >
           <Text style={styles.toggleText}>
-            {isSignUp ? 'Already have an account? Sign in' : "Don't have an account? Sign up"}
+            {isSignUp
+              ? "Already have an account? Sign in"
+              : "Don't have an account? Sign up"}
           </Text>
         </TouchableOpacity>
       </View>
@@ -146,10 +169,14 @@ export default function AuthScreen() {
           <Text style={styles.buttonText}>Sign in with Google</Text>
         </TouchableOpacity>
 
-        {Platform.OS === 'ios' ? (
+        {Platform.OS === "ios" ? (
           <AppleAuthentication.AppleAuthenticationButton
-            buttonType={AppleAuthentication.AppleAuthenticationButtonType.SIGN_IN}
-            buttonStyle={AppleAuthentication.AppleAuthenticationButtonStyle.BLACK}
+            buttonType={
+              AppleAuthentication.AppleAuthenticationButtonType.SIGN_IN
+            }
+            buttonStyle={
+              AppleAuthentication.AppleAuthenticationButtonStyle.BLACK
+            }
             cornerRadius={8}
             style={styles.appleNativeButton}
             onPress={handleAppleSignIn}
@@ -171,95 +198,95 @@ export default function AuthScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#fff',
-    alignItems: 'center',
-    justifyContent: 'center',
+    backgroundColor: "#fff",
+    alignItems: "center",
+    justifyContent: "center",
     padding: 20,
   },
   headerContainer: {
-    alignItems: 'center',
+    alignItems: "center",
     marginBottom: 60,
   },
   title: {
     fontSize: 36,
-    fontWeight: 'bold',
-    color: '#333',
+    fontWeight: "bold",
+    color: "#333",
     marginBottom: 10,
   },
   subtitle: {
     fontSize: 18,
-    color: '#666',
-    textAlign: 'center',
+    color: "#666",
+    textAlign: "center",
   },
   formContainer: {
-    width: '100%',
+    width: "100%",
     maxWidth: 300,
     marginBottom: 32,
   },
   input: {
-    width: '100%',
+    width: "100%",
     height: 48,
-    borderColor: '#ccc',
+    borderColor: "#ccc",
     borderWidth: 1,
     borderRadius: 8,
     paddingHorizontal: 12,
     marginBottom: 12,
     fontSize: 16,
-    backgroundColor: '#fafafa',
+    backgroundColor: "#fafafa",
   },
   emailButton: {
-    backgroundColor: '#007AFF',
+    backgroundColor: "#007AFF",
     borderRadius: 8,
     height: 48,
-    alignItems: 'center',
-    justifyContent: 'center',
+    alignItems: "center",
+    justifyContent: "center",
     marginBottom: 8,
   },
   errorText: {
-    color: 'red',
+    color: "red",
     marginBottom: 8,
-    textAlign: 'center',
+    textAlign: "center",
   },
   successText: {
-    color: 'green',
+    color: "green",
     marginBottom: 8,
-    textAlign: 'center',
+    textAlign: "center",
   },
   toggleText: {
-    color: '#007AFF',
-    textAlign: 'center',
+    color: "#007AFF",
+    textAlign: "center",
     marginTop: 8,
-    textDecorationLine: 'underline',
+    textDecorationLine: "underline",
     fontSize: 15,
   },
   buttonContainer: {
-    width: '100%',
+    width: "100%",
     maxWidth: 300,
     marginBottom: 20,
   },
   button: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
     padding: 14,
     borderRadius: 8,
     marginBottom: 16,
   },
   googleButton: {
-    backgroundColor: '#4285F4',
+    backgroundColor: "#4285F4",
   },
   appleButton: {
-    backgroundColor: '#000',
+    backgroundColor: "#000",
   },
   appleNativeButton: {
-    width: '100%',
+    width: "100%",
     height: 48,
     marginBottom: 16,
   },
   buttonText: {
-    color: '#fff',
+    color: "#fff",
     fontSize: 16,
-    fontWeight: '600',
+    fontWeight: "600",
     marginLeft: 10,
   },
-}); 
+});

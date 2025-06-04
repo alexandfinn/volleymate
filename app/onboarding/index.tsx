@@ -2,8 +2,8 @@ import { router } from 'expo-router';
 import React, { useState } from 'react';
 import { ActivityIndicator, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { useAuth } from '../contexts/auth';
-import { supabase } from '../lib/supabase';
+import { useAuth } from '@/contexts/auth';
+import { supabase } from '@/lib/supabase';
 
 const LEVELS = ['beginner', 'intermediate', 'advanced'];
 const GENDERS = ['male', 'female', 'other'];
