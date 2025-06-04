@@ -1,4 +1,4 @@
-import { Database } from '@/database.types';
+import { useAuth } from '@/contexts/auth';
 import { supabase } from '@/lib/supabase';
 import { Feather } from '@expo/vector-icons';
 import { useLocalSearchParams, useRouter } from 'expo-router';
@@ -148,8 +148,11 @@ function capitalize(str: string) {
 export default function MatchDetail() {
   const { id } = useLocalSearchParams();
   const router = useRouter();
-  const [match, setMatch] = useState<Database['public']['Views']['enriched_matches_with_participants']['Row'] | null>(null);
+  const { user } = useAuth();
+  const [match, setMatch] = useState<any>(null);
   const [loading, setLoading] = useState(true);
+  const [joining, setJoining] = useState(false);
+  const [isParticipant, setIsParticipant] = useState(false);
 
   useEffect(() => {
     async function fetchMatch() {
@@ -162,11 +165,76 @@ export default function MatchDetail() {
         setMatch(null);
       } else {
         setMatch(data);
+        // Check if current user is a participant
+        const participants = data.participants || [];
+        setIsParticipant(participants.some((p: any) => p.user_id === user?.id));
       }
       setLoading(false);
     }
     fetchMatch();
-  }, [id]);
+  }, [id, user?.id]);
+
+  const joinMatch = async () => {
+    if (!user || !match) return;
+    
+    setJoining(true);
+    try {
+      const { error } = await supabase
+        .from('match_participants')
+        .insert({
+          match_id: match.id,
+          user_id: user.id,
+          joined_at: new Date().toISOString(),
+        });
+
+      if (error) throw error;
+
+      // Refresh match data to show updated participants
+      const { data, error: fetchError } = await supabase
+        .from('enriched_matches_with_participants')
+        .select('*')
+        .eq('id', id)
+        .single();
+
+      if (fetchError) throw fetchError;
+      setMatch(data);
+      setIsParticipant(true);
+    } catch (error) {
+      console.error('Error joining match:', error);
+    } finally {
+      setJoining(false);
+    }
+  };
+
+  const leaveMatch = async () => {
+    if (!user || !match) return;
+    
+    setJoining(true);
+    try {
+      const { error } = await supabase
+        .from('match_participants')
+        .delete()
+        .eq('match_id', match.id)
+        .eq('user_id', user.id);
+
+      if (error) throw error;
+
+      // Refresh match data to show updated participants
+      const { data, error: fetchError } = await supabase
+        .from('enriched_matches_with_participants')
+        .select('*')
+        .eq('id', id)
+        .single();
+
+      if (fetchError) throw fetchError;
+      setMatch(data);
+      setIsParticipant(false);
+    } catch (error) {
+      console.error('Error leaving match:', error);
+    } finally {
+      setJoining(false);
+    }
+  };
 
   if (loading) {
     return (
@@ -232,9 +300,23 @@ export default function MatchDetail() {
         <ActionButton onPress={() => Share.share({ message: `Join my match: https://volleymate.app/match/${match.id}` })}>
           <ActionButtonText>Share match</ActionButtonText>
         </ActionButton>
-        <ActionButtonPrimary>
-          <ActionButtonTextPrimary>Join match</ActionButtonTextPrimary>
-        </ActionButtonPrimary>
+        {isParticipant ? (
+          <ActionButtonPrimary onPress={leaveMatch} disabled={joining}>
+            {joining ? (
+              <ActivityIndicator color="#fff" />
+            ) : (
+              <ActionButtonTextPrimary>Leave match</ActionButtonTextPrimary>
+            )}
+          </ActionButtonPrimary>
+        ) : (
+          <ActionButtonPrimary onPress={joinMatch} disabled={joining}>
+            {joining ? (
+              <ActivityIndicator color="#fff" />
+            ) : (
+              <ActionButtonTextPrimary>Join match</ActionButtonTextPrimary>
+            )}
+          </ActionButtonPrimary>
+        )}
       </ButtonRow>
     </Container>
   );
