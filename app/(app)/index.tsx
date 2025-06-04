@@ -126,6 +126,23 @@ const ProfileButton = styled(TouchableOpacity)`
   box-shadow: 0 1px 4px rgba(0, 0, 0, 0.04);
 `;
 
+const FloatingButton = styled(TouchableOpacity)`
+  position: absolute;
+  bottom: 30px;
+  right: 30px;
+  width: 60px;
+  height: 60px;
+  border-radius: 30px;
+  background-color: #7b61ff;
+  align-items: center;
+  justify-content: center;
+  elevation: 5;
+  shadow-color: #000;
+  shadow-offset: 0px 2px;
+  shadow-opacity: 0.25;
+  shadow-radius: 3.84px;
+`;
+
 // Type definitions for match and participant
 interface Participant {
   user_id: string;
@@ -268,6 +285,9 @@ export default function Home() {
           No upcoming matches found
         </Text>
       )}
+      <FloatingButton onPress={() => router.push("/create-match")}>
+        <Feather name="plus" size={30} color="#fff" />
+      </FloatingButton>
     </Container>
   );
 }
