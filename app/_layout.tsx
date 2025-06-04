@@ -1,5 +1,6 @@
 import { Stack } from "expo-router";
 import { AuthProvider } from "../contexts/auth";
+import { OnboardingProvider } from "../contexts/onboarding";
 
 function RootLayoutNav() {
   return <Stack screenOptions={{ headerShown: false }} />;
@@ -8,7 +9,9 @@ function RootLayoutNav() {
 export default function RootLayout() {
   return (
     <AuthProvider>
-      <RootLayoutNav />
+      <OnboardingProvider>
+        <RootLayoutNav />
+      </OnboardingProvider>
     </AuthProvider>
   );
 }

@@ -79,7 +79,7 @@ export default function Home() {
         </Button>
       </UserInfo>
       
-      <Link href="./profile" style={{ color: '#007AFF', marginTop: 20 }}>
+      <Link href="/profile" style={{ color: '#007AFF', marginTop: 20 }}>
         Go to Profile
       </Link>
     </Container>

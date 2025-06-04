@@ -11,30 +11,35 @@ export default function Layout() {
 
   useEffect(() => {
     async function checkProfile() {
-      if (user) {
-        try {
-          const { data, error } = await supabase
-            .from("user_profiles")
-            .select("id")
-            .eq("id", user.id)
-            .maybeSingle();
+      if (loading) {
+        return;
+      }
 
-          console.log("data", data);
+      if (!user) {
+        setProfileLoading(false);
+        return;
+      }
 
-          if (error && error.code !== "PGRST116") throw error;
-          setHasProfile(!!data);
-        } catch (error) {
-          console.error("Error checking profile:", error);
-        } finally {
-          setProfileLoading(false);
-        }
-      } else {
+      try {
+        const { data, error } = await supabase
+          .from("user_profiles")
+          .select("id")
+          .eq("id", user.id)
+          .maybeSingle();
+
+        console.log("data", data);
+
+        if (error && error.code !== "PGRST116") throw error;
+        setHasProfile(!!data);
+      } catch (error) {
+        console.error("Error checking profile:", error);
+      } finally {
         setProfileLoading(false);
       }
     }
 
     checkProfile();
-  }, [user]);
+  }, [loading, user]);
 
   // Show loading screen while checking authentication and profile
   if (loading || profileLoading) {
@@ -49,6 +54,14 @@ export default function Layout() {
     return <Redirect href="/auth" />;
   }
 
+  console.log(
+    "hasProfile",
+    hasProfile,
+    "user",
+    Boolean(user),
+    "profileLoading",
+    profileLoading
+  );
   if (user && !hasProfile) {
     return <Redirect href="/onboarding" />;
   }

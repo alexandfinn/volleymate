@@ -1,5 +1,7 @@
+import { useAuth } from "@/contexts/auth";
+import { supabase } from "@/lib/supabase";
 import { router } from "expo-router";
-import React, { useEffect } from "react";
+import React, { useEffect, useState } from "react";
 import {
   ActivityIndicator,
   StyleSheet,
@@ -8,19 +10,49 @@ import {
   View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { useAuth } from "@/contexts/auth";
+
+interface UserProfile {
+  name: string;
+  level: string;
+  gender: string;
+}
 
 export default function Profile() {
-  const { user, loading, signOut } = useAuth();
+  const { user, loading: authLoading, signOut } = useAuth();
+  const [profile, setProfile] = useState<UserProfile | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
-  // Handle redirect in useEffect, not during render
   useEffect(() => {
-    if (!loading && !user) {
+    if (!authLoading && !user) {
       router.replace("/auth");
     }
-  }, [user, loading]);
+  }, [user, authLoading]);
 
-  if (loading) {
+  useEffect(() => {
+    async function fetchProfile() {
+      if (!user) return;
+
+      try {
+        const { data, error } = await supabase
+          .from("user_profiles")
+          .select("name, level, gender")
+          .eq("id", user.id)
+          .single();
+
+        if (error) throw error;
+        setProfile(data);
+      } catch (err: any) {
+        setError(err.message || "Failed to load profile");
+      } finally {
+        setLoading(false);
+      }
+    }
+
+    fetchProfile();
+  }, [user]);
+
+  if (authLoading || loading) {
     return (
       <SafeAreaView style={styles.container}>
         <ActivityIndicator size="large" color="#007AFF" />
@@ -28,7 +60,6 @@ export default function Profile() {
     );
   }
 
-  // Return null instead of navigating directly
   if (!user) {
     return null;
   }
@@ -41,14 +72,25 @@ export default function Profile() {
         <Text style={styles.label}>Email:</Text>
         <Text style={styles.value}>{user.email}</Text>
 
-        <Text style={styles.label}>User ID:</Text>
-        <Text style={styles.value}>{user.id}</Text>
-
-        {user.user_metadata?.full_name && (
+        {profile ? (
           <>
             <Text style={styles.label}>Name:</Text>
-            <Text style={styles.value}>{user.user_metadata.full_name}</Text>
+            <Text style={styles.value}>{profile.name}</Text>
+
+            <Text style={styles.label}>Level:</Text>
+            <Text style={styles.value}>
+              {profile.level.charAt(0).toUpperCase() + profile.level.slice(1)}
+            </Text>
+
+            <Text style={styles.label}>Gender:</Text>
+            <Text style={styles.value}>
+              {profile.gender.charAt(0).toUpperCase() + profile.gender.slice(1)}
+            </Text>
           </>
+        ) : error ? (
+          <Text style={styles.errorText}>{error}</Text>
+        ) : (
+          <Text style={styles.errorText}>Profile not found</Text>
         )}
       </View>
 
@@ -93,6 +135,12 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: "#333",
     marginBottom: 20,
+  },
+  errorText: {
+    color: "#FF3B30",
+    fontSize: 16,
+    textAlign: "center",
+    marginTop: 10,
   },
   button: {
     backgroundColor: "#007AFF",
