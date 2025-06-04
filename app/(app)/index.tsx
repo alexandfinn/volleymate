@@ -256,7 +256,7 @@ export default function Home() {
                 )}
               </ParticipantsRow>
               <LocationText>{match.location_name}</LocationText>
-              <AddressText>{match.address}</AddressText>
+              <AddressText>{match.location_address}</AddressText>
               <JoinButton>
                 <JoinButtonText>Join Match</JoinButtonText>
               </JoinButton>

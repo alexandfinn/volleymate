@@ -9,6 +9,30 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
+      locations: {
+        Row: {
+          address: string | null
+          city: string | null
+          created_at: string
+          id: number
+          name: string | null
+        }
+        Insert: {
+          address?: string | null
+          city?: string | null
+          created_at?: string
+          id?: number
+          name?: string | null
+        }
+        Update: {
+          address?: string | null
+          city?: string | null
+          created_at?: string
+          id?: number
+          name?: string | null
+        }
+        Relationships: []
+      }
       match_messages: {
         Row: {
           id: string
@@ -28,7 +52,8 @@ export type Database = {
           id?: string
           match_id?: string | null
           message?: string
-          sender_id?: string | n[2K[?25h[?1002l[?1003l[?1006lnull
+          sender_id?: string | null
+          sent_at?: string | null
         }
         Relationships: [
           {
@@ -86,6 +111,7 @@ export type Database = {
           end_time: string
           id: string
           level: string | null
+          location: number | null
           owner_id: string | null
           start_time: string
         }
@@ -94,6 +120,7 @@ export type Database = {
           end_time: string
           id?: string
           level?: string | null
+          location?: number | null
           owner_id?: string | null
           start_time: string
         }
@@ -102,10 +129,19 @@ export type Database = {
           end_time?: string
           id?: string
           level?: string | null
+          location?: number | null
           owner_id?: string | null
           start_time?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "matches_location_fkey"
+            columns: ["location"]
+            isOneToOne: false
+            referencedRelation: "locations"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       user_profiles: {
         Row: {
@@ -139,14 +175,24 @@ export type Database = {
       enriched_matches_with_participants: {
         Row: {
           created_at: string | null
-          end_time: string | null
           id: string | null
           level: string | null
-          owner_id: string | null
+          location: number | null
+          location_address: string | null
+          location_city: string | null
+          location_name: string | null
           participants: Json | null
           start_time: string | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "matches_location_fkey"
+            columns: ["location"]
+            isOneToOne: false
+            referencedRelation: "locations"
+            referencedColumns: ["id"]
+          },
+        ]
       }
     }
     Functions: {

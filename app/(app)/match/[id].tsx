@@ -145,11 +145,28 @@ function capitalize(str: string) {
   return str.charAt(0).toUpperCase() + str.slice(1);
 }
 
+interface MatchWithLocation {
+  id: string;
+  start_time: string;
+  end_time: string;
+  level: string | null;
+  location: {
+    id: number;
+    name: string | null;
+    address: string | null;
+    city: string | null;
+  } | null;
+  participants: Array<{
+    user_id: string;
+    user_name: string;
+  }>;
+}
+
 export default function MatchDetail() {
-  const { id } = useLocalSearchParams();
+  const { id } = useLocalSearchParams<{ id: string }>();
   const router = useRouter();
   const { user } = useAuth();
-  const [match, setMatch] = useState<any>(null);
+  const [match, setMatch] = useState<MatchWithLocation | null>(null);
   const [loading, setLoading] = useState(true);
   const [joining, setJoining] = useState(false);
   const [isParticipant, setIsParticipant] = useState(false);
@@ -157,17 +174,43 @@ export default function MatchDetail() {
   useEffect(() => {
     async function fetchMatch() {
       const { data, error } = await supabase
-        .from('enriched_matches_with_participants')
-        .select('*')
+        .from('matches')
+        .select(`
+          *,
+          location:locations(*)
+        `)
         .eq('id', id)
         .single();
+
       if (error) {
         setMatch(null);
       } else {
-        setMatch(data);
-        // Check if current user is a participant
-        const participants = data.participants || [];
-        setIsParticipant(participants.some((p: any) => p.user_id === user?.id));
+        // Fetch participants separately
+        const { data: participantsData, error: participantsError } = await supabase
+          .from('match_participants')
+          .select('user_id')
+          .eq('match_id', id);
+
+        if (!participantsError && participantsData) {
+          // Fetch user profiles for participants
+          const userIds = participantsData.map(p => p.user_id);
+          const { data: profilesData, error: profilesError } = await supabase
+            .from('user_profiles')
+            .select('id, name')
+            .in('id', userIds);
+
+          if (!profilesError && profilesData) {
+            const participants = participantsData.map(p => {
+              const profile = profilesData.find(prof => prof.id === p.user_id);
+              return {
+                user_id: p.user_id,
+                user_name: profile?.name || 'Unknown'
+              };
+            });
+            setMatch({ ...data, participants });
+            setIsParticipant(participants.some(p => p.user_id === user?.id));
+          }
+        }
       }
       setLoading(false);
     }
@@ -189,16 +232,32 @@ export default function MatchDetail() {
 
       if (error) throw error;
 
-      // Refresh match data to show updated participants
-      const { data, error: fetchError } = await supabase
-        .from('enriched_matches_with_participants')
-        .select('*')
-        .eq('id', id)
-        .single();
+      // Refresh match data
+      const { data: participantsData, error: participantsError } = await supabase
+        .from('match_participants')
+        .select('user_id')
+        .eq('match_id', id);
 
-      if (fetchError) throw fetchError;
-      setMatch(data);
-      setIsParticipant(true);
+      if (!participantsError && participantsData) {
+        // Fetch user profiles for participants
+        const userIds = participantsData.map(p => p.user_id);
+        const { data: profilesData, error: profilesError } = await supabase
+          .from('user_profiles')
+          .select('id, name')
+          .in('id', userIds);
+
+        if (!profilesError && profilesData) {
+          const participants = participantsData.map(p => {
+            const profile = profilesData.find(prof => prof.id === p.user_id);
+            return {
+              user_id: p.user_id,
+              user_name: profile?.name || 'Unknown'
+            };
+          });
+          setMatch(prev => prev ? { ...prev, participants } : null);
+          setIsParticipant(true);
+        }
+      }
     } catch (error) {
       console.error('Error joining match:', error);
     } finally {
@@ -219,16 +278,32 @@ export default function MatchDetail() {
 
       if (error) throw error;
 
-      // Refresh match data to show updated participants
-      const { data, error: fetchError } = await supabase
-        .from('enriched_matches_with_participants')
-        .select('*')
-        .eq('id', id)
-        .single();
+      // Refresh match data
+      const { data: participantsData, error: participantsError } = await supabase
+        .from('match_participants')
+        .select('user_id')
+        .eq('match_id', id);
 
-      if (fetchError) throw fetchError;
-      setMatch(data);
-      setIsParticipant(false);
+      if (!participantsError && participantsData) {
+        // Fetch user profiles for participants
+        const userIds = participantsData.map(p => p.user_id);
+        const { data: profilesData, error: profilesError } = await supabase
+          .from('user_profiles')
+          .select('id, name')
+          .in('id', userIds);
+
+        if (!profilesError && profilesData) {
+          const participants = participantsData.map(p => {
+            const profile = profilesData.find(prof => prof.id === p.user_id);
+            return {
+              user_id: p.user_id,
+              user_name: profile?.name || 'Unknown'
+            };
+          });
+          setMatch(prev => prev ? { ...prev, participants } : null);
+          setIsParticipant(false);
+        }
+      }
     } catch (error) {
       console.error('Error leaving match:', error);
     } finally {
@@ -258,8 +333,8 @@ export default function MatchDetail() {
   }
 
   // Prepare participants (show up to 4, fill with null for available slots)
-  const participants: (string | null)[] = ((match.participants || []) as any[])
-    .map((p) => p.user_name || 'Unknown')
+  const participants: (string | null)[] = (match.participants || [])
+    .map((p) => p.user_name)
     .slice(0, 4);
   while (participants.length < 4) participants.push(null);
 
@@ -273,11 +348,11 @@ export default function MatchDetail() {
       </Header>
       <MatchCard>
         <MatchHeader>
-          <MatchTitle>{formatDateTime(match.start_time || '')}</MatchTitle>
+          <MatchTitle>{formatDateTime(match.start_time)}</MatchTitle>
         </MatchHeader>
         <MatchLevel>{capitalize(match.level || 'Beginner')}</MatchLevel>
-        <LocationText>{match.location_name}</LocationText>
-        <AddressText>{match.address}</AddressText>
+        <LocationText>{match.location?.name}</LocationText>
+        <AddressText>{match.location?.address}</AddressText>
         <ParticipantsRow>
           {participants.map((name, idx) =>
             name ? (
