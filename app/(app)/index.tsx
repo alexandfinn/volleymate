@@ -6,6 +6,7 @@ import React, { useEffect, useState } from "react";
 import { ActivityIndicator, Text, TouchableOpacity, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import styled from "styled-components/native";
+import { Database } from "@/database.types";
 
 const Container = styled(SafeAreaView)`
   flex: 1;
@@ -131,13 +132,6 @@ interface Participant {
   user_name: string | null;
 }
 
-interface Match {
-  id: string;
-  start_time: string;
-  level: string;
-  participants: Participant[];
-}
-
 function formatDateTime(dateStr: string) {
   const date = new Date(dateStr);
   return (
@@ -161,7 +155,9 @@ function capitalize(str: string) {
 
 export default function Home() {
   const { user, loading, signOut } = useAuth();
-  const [matches, setMatches] = useState<Match[]>([]);
+  const [matches, setMatches] = useState<
+    Database["public"]["Views"]["enriched_matches_with_participants"]["Row"][]
+  >([]);
   const [loadingMatches, setLoadingMatches] = useState(true);
   const router = useRouter();
 
@@ -185,7 +181,7 @@ export default function Home() {
       } else {
         // Flatten participants for easier rendering
         console.log(data[0]);
-        setMatches(data as Match[]);
+        setMatches(data);
       }
       setLoadingMatches(false);
     }
@@ -220,10 +216,10 @@ export default function Home() {
           style={{ marginTop: 30 }}
         />
       ) : matches.length > 0 ? (
-        matches.map((match: Match) => {
+        matches.map((match) => {
           // Show up to 4 participants, fill with 'Available' if less
           const participants: (string | null)[] = (
-            match.participants || []
+            (match.participants || []) as unknown as Participant[]
           )
             .map((p: Participant) => p.user_name || "Unknown")
             .slice(0, 4);
@@ -231,7 +227,9 @@ export default function Home() {
           return (
             <MatchCard key={match.id}>
               <MatchHeader>
-                <MatchTitle>{formatDateTime(match.start_time)}</MatchTitle>
+                <MatchTitle>
+                  {formatDateTime(match.start_time || "")}
+                </MatchTitle>
               </MatchHeader>
               <MatchLevel>{capitalize(match.level || "Beginner")}</MatchLevel>
               <ParticipantsRow>
