@@ -2,6 +2,7 @@ import { useAuth } from "@/contexts/auth";
 import { Database } from "@/database.types";
 import { supabase } from "@/lib/supabase";
 import { Feather } from "@expo/vector-icons";
+import { useFocusEffect } from "@react-navigation/native";
 import { useRouter } from "expo-router";
 import React, { useEffect, useState } from "react";
 import { ActivityIndicator, Text, TouchableOpacity, View } from "react-native";
@@ -184,26 +185,28 @@ export default function Home() {
     }
   }, [user, loading]);
 
-  useEffect(() => {
-    async function fetchMatches() {
-      setLoadingMatches(true);
-      // Use dot notation to mimic the SQL left join
-      const { data, error } = await supabase
-        .from("enriched_matches_with_participants")
-        .select("*")
-        .gte("start_time", new Date().toISOString())
-        .order("start_time", { ascending: true });
-      if (error || !data) {
-        setMatches([]);
-      } else {
-        // Flatten participants for easier rendering
-        console.log(data[0]);
-        setMatches(data);
+  useFocusEffect(
+    React.useCallback(() => {
+      async function fetchMatches() {
+        setLoadingMatches(true);
+        // Use dot notation to mimic the SQL left join
+        const { data, error } = await supabase
+          .from("enriched_matches_with_participants")
+          .select("*")
+          .gte("start_time", new Date().toISOString())
+          .order("start_time", { ascending: true });
+        if (error || !data) {
+          setMatches([]);
+        } else {
+          // Flatten participants for easier rendering
+          console.log(data[0]);
+          setMatches(data);
+        }
+        setLoadingMatches(false);
       }
-      setLoadingMatches(false);
-    }
-    fetchMatches();
-  }, []);
+      fetchMatches();
+    }, [])
+  );
 
   if (loading) {
     return (
