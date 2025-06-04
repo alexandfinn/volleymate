@@ -13,40 +13,6 @@ const Container = styled(SafeAreaView)`
   background-color: #fff;
 `;
 
-const Title = styled(Text)`
-  font-size: 24px;
-  font-weight: bold;
-  color: #333333;
-  margin-bottom: 20px;
-`;
-
-const UserInfo = styled(View)`
-  margin-vertical: 20px;
-  padding: 15px;
-  border-radius: 8px;
-  background-color: #f0f0f0;
-`;
-
-const UserEmail = styled(Text)`
-  font-size: 16px;
-  color: #333;
-  margin-bottom: 10px;
-`;
-
-const Button = styled(TouchableOpacity)`
-  padding: 12px 20px;
-  background-color: #007aff;
-  border-radius: 8px;
-  align-items: center;
-  margin-top: 10px;
-`;
-
-const ButtonText = styled(Text)`
-  color: #fff;
-  font-size: 16px;
-  font-weight: 600;
-`;
-
 const SectionTitle = styled(Text)`
   font-size: 20px;
   font-weight: bold;
@@ -160,16 +126,16 @@ const ProfileButton = styled(TouchableOpacity)`
 `;
 
 // Type definitions for match and participant
-interface MatchParticipantProfile {
+interface Participant {
   user_id: string;
-  name: string | null;
+  user_name: string | null;
 }
 
 interface Match {
   id: string;
   start_time: string;
   level: string;
-  match_participants: MatchParticipantProfile[];
+  participants: Participant[];
 }
 
 function formatDateTime(dateStr: string) {
@@ -210,17 +176,8 @@ export default function Home() {
       setLoadingMatches(true);
       // Use dot notation to mimic the SQL left join
       const { data, error } = await supabase
-        .from("matches")
-        .select(
-          `
-          *,
-          match_participants:match_participants!left(match_id)
-          (
-            user_id,
-            user_profiles:user_id ( name )
-          )
-        `
-        )
+        .from("enriched_matches_with_participants")
+        .select("*")
         .gte("start_time", new Date().toISOString())
         .order("start_time", { ascending: true });
       if (error || !data) {
@@ -228,16 +185,7 @@ export default function Home() {
       } else {
         // Flatten participants for easier rendering
         console.log(data[0]);
-        const matchesWithProfiles = data.map((match: any) => ({
-          ...match,
-          match_participants: (match.match_participants || []).map(
-            (p: any) => ({
-              user_id: p.user_id,
-              name: p.user_profiles?.name || null,
-            })
-          ),
-        }));
-        setMatches(matchesWithProfiles as Match[]);
+        setMatches(data as Match[]);
       }
       setLoadingMatches(false);
     }
@@ -275,9 +223,9 @@ export default function Home() {
         matches.map((match: Match) => {
           // Show up to 4 participants, fill with 'Available' if less
           const participants: (string | null)[] = (
-            match.match_participants || []
+            match.participants || []
           )
-            .map((p) => p.name || "Unknown")
+            .map((p: Participant) => p.user_name || "Unknown")
             .slice(0, 4);
           while (participants.length < 4) participants.push(null);
           return (
