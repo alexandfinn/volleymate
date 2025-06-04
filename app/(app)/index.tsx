@@ -5,7 +5,7 @@ import { Feather } from "@expo/vector-icons";
 import { useFocusEffect } from "@react-navigation/native";
 import { useRouter } from "expo-router";
 import React, { useEffect, useState } from "react";
-import { ActivityIndicator, Text, TouchableOpacity, View } from "react-native";
+import { ActivityIndicator, ScrollView, Text, TouchableOpacity, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import styled from "styled-components/native";
 
@@ -144,6 +144,10 @@ const FloatingButton = styled(TouchableOpacity)`
   shadow-radius: 3.84px;
 `;
 
+const ScrollContainer = styled(ScrollView)`
+  flex: 1;
+`;
+
 // Type definitions for match and participant
 interface Participant {
   user_id: string;
@@ -227,67 +231,69 @@ export default function Home() {
           <Feather name="user" size={22} color="#222" />
         </ProfileButton>
       </ProfileButtonRow>
-      <SectionTitle>Upcoming Matches</SectionTitle>
-      <SectionSubtitle>Play some volley ball, mate!</SectionSubtitle>
-      {loadingMatches ? (
-        <ActivityIndicator
-          size="large"
-          color="#007AFF"
-          style={{ marginTop: 30 }}
-        />
-      ) : matches.length > 0 ? (
-        matches.map((match) => {
-          // Show up to 4 participants, fill with 'Available' if less
-          const participants: (string | null)[] = (
-            (match.participants || []) as unknown as Participant[]
-          )
-            .map((p: Participant) => p.user_name || "Unknown")
-            .slice(0, 4);
-          while (participants.length < 4) participants.push(null);
-          return (
-            <MatchCard 
-              key={match.id}
-              onPress={() => router.push(`/match/${match.id}`)}
-            >
-              <MatchHeader>
-                <MatchTitle>
-                  {formatDateTime(match.start_time || "")}
-                </MatchTitle>
-              </MatchHeader>
-              <MatchLevel>{capitalize(match.level || "Beginner")}</MatchLevel>
-              <ParticipantsRow>
-                {participants.map((name: string | null, idx: number) =>
-                  name ? (
-                    <Participant key={idx}>
-                      <Avatar>
-                        <Feather name="user" size={24} color="#7a869a" />
-                      </Avatar>
-                      <Text
-                        style={{ fontSize: 13, color: "#444", marginTop: 2 }}
-                      >
-                        {name}
-                      </Text>
-                    </Participant>
-                  ) : (
-                    <Participant key={idx}>
-                      <Feather name="plus-circle" size={38} color="#3a4a5e" />
-                    </Participant>
-                  )
-                )}
-              </ParticipantsRow>
-              <LocationText>{match.location_name}</LocationText>
-              <AddressText>{match.location_address}</AddressText>
-              <JoinButton>
-                <JoinButtonText>Join Match</JoinButtonText>
-              </JoinButton>
-            </MatchCard>
-          );
-        })
-      ) : (
-        <Text style={{ textAlign: "center", marginTop: 30, color: "#666" }}>
-          No upcoming matches found
-        </Text>
-      )}
+      <ScrollContainer contentContainerStyle={{ paddingBottom: 100 }}>
+        <SectionTitle>Upcoming Matches</SectionTitle>
+        <SectionSubtitle>Play some volley ball, mate!</SectionSubtitle>
+        {loadingMatches ? (
+          <ActivityIndicator
+            size="large"
+            color="#007AFF"
+            style={{ marginTop: 30 }}
+          />
+        ) : matches.length > 0 ? (
+          matches.map((match) => {
+            // Show up to 4 participants, fill with 'Available' if less
+            const participants: (string | null)[] = (
+              (match.participants || []) as unknown as Participant[]
+            )
+              .map((p: Participant) => p.user_name || "Unknown")
+              .slice(0, 4);
+            while (participants.length < 4) participants.push(null);
+            return (
+              <MatchCard 
+                key={match.id}
+                onPress={() => router.push(`/match/${match.id}`)}
+              >
+                <MatchHeader>
+                  <MatchTitle>
+                    {formatDateTime(match.start_time || "")}
+                  </MatchTitle>
+                </MatchHeader>
+                <MatchLevel>{capitalize(match.level || "Beginner")}</MatchLevel>
+                <ParticipantsRow>
+                  {participants.map((name: string | null, idx: number) =>
+                    name ? (
+                      <Participant key={idx}>
+                        <Avatar>
+                          <Feather name="user" size={24} color="#7a869a" />
+                        </Avatar>
+                        <Text
+                          style={{ fontSize: 13, color: "#444", marginTop: 2 }}
+                        >
+                          {name}
+                        </Text>
+                      </Participant>
+                    ) : (
+                      <Participant key={idx}>
+                        <Feather name="plus-circle" size={38} color="#3a4a5e" />
+                      </Participant>
+                    )
+                  )}
+                </ParticipantsRow>
+                <LocationText>{match.location_name}</LocationText>
+                <AddressText>{match.location_address}</AddressText>
+                <JoinButton>
+                  <JoinButtonText>Join Match</JoinButtonText>
+                </JoinButton>
+              </MatchCard>
+            );
+          })
+        ) : (
+          <Text style={{ textAlign: "center", marginTop: 30, color: "#666" }}>
+            No upcoming matches found
+          </Text>
+        )}
+      </ScrollContainer>
       <FloatingButton onPress={() => router.push("/create-match")}>
         <Feather name="plus" size={30} color="#fff" />
       </FloatingButton>

@@ -393,6 +393,15 @@ export default function MatchDetail() {
           </ActionButtonPrimary>
         )}
       </ButtonRow>
+      {isParticipant && (
+        <ActionButton
+          style={{ marginHorizontal: 16, marginTop: 12, flexDirection: 'row', justifyContent: 'center', alignItems: 'center', paddingVertical: 8 }}
+          onPress={() => router.push(`/match/${match.id}/chat`)}
+        >
+          <Feather name="message-circle" size={18} color="#7b61ff" style={{ marginRight: 6 }} />
+          <ActionButtonText style={{ fontSize: 15 }}>Open Match Chat</ActionButtonText>
+        </ActionButton>
+      )}
     </Container>
   );
 } 
