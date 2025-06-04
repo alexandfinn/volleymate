@@ -1,4 +1,5 @@
 import { useAuth } from "@/contexts/auth";
+import { Database } from "@/database.types";
 import { supabase } from "@/lib/supabase";
 import { Feather } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
@@ -6,7 +7,6 @@ import React, { useEffect, useState } from "react";
 import { ActivityIndicator, Text, TouchableOpacity, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import styled from "styled-components/native";
-import { Database } from "@/database.types";
 
 const Container = styled(SafeAreaView)`
   flex: 1;
@@ -27,7 +27,7 @@ const SectionSubtitle = styled(Text)`
   margin-bottom: 18px;
 `;
 
-const MatchCard = styled(View)`
+const MatchCard = styled(TouchableOpacity)`
   background: #fff;
   border: 1px solid #e0e0e0;
   border-radius: 12px;
@@ -225,7 +225,10 @@ export default function Home() {
             .slice(0, 4);
           while (participants.length < 4) participants.push(null);
           return (
-            <MatchCard key={match.id}>
+            <MatchCard 
+              key={match.id}
+              onPress={() => router.push(`/match/${match.id}`)}
+            >
               <MatchHeader>
                 <MatchTitle>
                   {formatDateTime(match.start_time || "")}
@@ -248,26 +251,21 @@ export default function Home() {
                   ) : (
                     <Participant key={idx}>
                       <Feather name="plus-circle" size={38} color="#3a4a5e" />
-                      <Text
-                        style={{ fontSize: 13, color: "#444", marginTop: 2 }}
-                      >
-                        Available
-                      </Text>
                     </Participant>
                   )
                 )}
               </ParticipantsRow>
-              <LocationText>Beach Mitte</LocationText>
-              <AddressText>Königsweg 18, 10715 Berlin</AddressText>
+              <LocationText>{match.location_name}</LocationText>
+              <AddressText>{match.address}</AddressText>
               <JoinButton>
-                <JoinButtonText>Join</JoinButtonText>
+                <JoinButtonText>Join Match</JoinButtonText>
               </JoinButton>
             </MatchCard>
           );
         })
       ) : (
-        <Text style={{ marginTop: 30, color: "#888", fontSize: 16 }}>
-          No upcoming matches found.
+        <Text style={{ textAlign: "center", marginTop: 30, color: "#666" }}>
+          No upcoming matches found
         </Text>
       )}
     </Container>
