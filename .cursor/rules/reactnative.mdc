@@ -4,3 +4,4 @@ globs:
 alwaysApply: true
 ---
 - Use Styled Components for styling
+- Use expo-icons feather icons when needed

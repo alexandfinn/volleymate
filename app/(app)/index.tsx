@@ -1,9 +1,11 @@
-import { Link, router } from "expo-router";
-import React, { useEffect } from "react";
+import { useAuth } from "@/contexts/auth";
+import { supabase } from "@/lib/supabase";
+import { Feather } from "@expo/vector-icons";
+import { useRouter } from "expo-router";
+import React, { useEffect, useState } from "react";
 import { ActivityIndicator, Text, TouchableOpacity, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import styled from "styled-components/native";
-import { useAuth } from "@/contexts/auth";
 
 const Container = styled(SafeAreaView)`
   flex: 1;
@@ -33,7 +35,7 @@ const UserEmail = styled(Text)`
 
 const Button = styled(TouchableOpacity)`
   padding: 12px 20px;
-  background-color: #007AFF;
+  background-color: #007aff;
   border-radius: 8px;
   align-items: center;
   margin-top: 10px;
@@ -45,15 +47,202 @@ const ButtonText = styled(Text)`
   font-weight: 600;
 `;
 
+const SectionTitle = styled(Text)`
+  font-size: 20px;
+  font-weight: bold;
+  color: #222;
+  margin-bottom: 2px;
+`;
+
+const SectionSubtitle = styled(Text)`
+  font-size: 15px;
+  color: #666;
+  margin-bottom: 18px;
+`;
+
+const MatchCard = styled(View)`
+  background: #fff;
+  border: 1px solid #e0e0e0;
+  border-radius: 12px;
+  padding: 18px 16px 14px 16px;
+  margin-bottom: 18px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.03);
+`;
+
+const MatchHeader = styled(View)`
+  flex-direction: row;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 8px;
+`;
+
+const MatchTitle = styled(Text)`
+  font-size: 17px;
+  font-weight: bold;
+  color: #222;
+`;
+
+const MatchLevel = styled(Text)`
+  font-size: 14px;
+  color: #666;
+  margin-bottom: 8px;
+`;
+
+const ParticipantsRow = styled(View)`
+  flex-direction: row;
+  align-items: center;
+  margin-bottom: 10px;
+`;
+
+const Participant = styled(View)`
+  align-items: center;
+  margin-right: 18px;
+`;
+
+const Avatar = styled(View)`
+  width: 38px;
+  height: 38px;
+  border-radius: 19px;
+  background: #e9eef3;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 2px;
+`;
+
+const AvatarText = styled(Text)`
+  color: #7a869a;
+  font-size: 18px;
+  font-weight: 600;
+`;
+
+const LocationText = styled(Text)`
+  font-size: 16px;
+  color: #222;
+  font-weight: 500;
+`;
+
+const AddressText = styled(Text)`
+  font-size: 13px;
+  color: #888;
+  margin-bottom: 8px;
+`;
+
+const JoinButton = styled(TouchableOpacity)`
+  border: 1.5px solid #a48fff;
+  border-radius: 8px;
+  padding: 7px 22px;
+  align-items: center;
+  margin-top: 6px;
+  align-self: flex-end;
+`;
+
+const JoinButtonText = styled(Text)`
+  color: #7b61ff;
+  font-size: 16px;
+  font-weight: 600;
+`;
+
+const ProfileButtonRow = styled(View)`
+  flex-direction: row;
+  justify-content: flex-end;
+  align-items: center;
+  margin-bottom: 8px;
+`;
+
+const ProfileButton = styled(TouchableOpacity)`
+  background: #f3f6fa;
+  border-radius: 20px;
+  width: 40px;
+  height: 40px;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.04);
+`;
+
+// Type definitions for match and participant
+interface MatchParticipantProfile {
+  user_id: string;
+  name: string | null;
+}
+
+interface Match {
+  id: string;
+  start_time: string;
+  level: string;
+  match_participants: MatchParticipantProfile[];
+}
+
+function formatDateTime(dateStr: string) {
+  const date = new Date(dateStr);
+  return (
+    date.toLocaleDateString(undefined, {
+      weekday: "long",
+      month: "long",
+      day: "2-digit",
+    }) +
+    " | " +
+    date.toLocaleTimeString(undefined, {
+      hour: "2-digit",
+      minute: "2-digit",
+      hour12: false,
+    })
+  );
+}
+
+function capitalize(str: string) {
+  return str.charAt(0).toUpperCase() + str.slice(1);
+}
+
 export default function Home() {
   const { user, loading, signOut } = useAuth();
+  const [matches, setMatches] = useState<Match[]>([]);
+  const [loadingMatches, setLoadingMatches] = useState(true);
+  const router = useRouter();
 
-  // Handle redirect in useEffect, not during render
   useEffect(() => {
     if (!loading && !user) {
-      router.replace('/auth');
+      router.replace("/auth");
     }
   }, [user, loading]);
+
+  useEffect(() => {
+    async function fetchMatches() {
+      setLoadingMatches(true);
+      // Use dot notation to mimic the SQL left join
+      const { data, error } = await supabase
+        .from("matches")
+        .select(
+          `
+          *,
+          match_participants:match_participants!left(match_id)
+          (
+            user_id,
+            user_profiles:user_id ( name )
+          )
+        `
+        )
+        .gte("start_time", new Date().toISOString())
+        .order("start_time", { ascending: true });
+      if (error || !data) {
+        setMatches([]);
+      } else {
+        // Flatten participants for easier rendering
+        console.log(data[0]);
+        const matchesWithProfiles = data.map((match: any) => ({
+          ...match,
+          match_participants: (match.match_participants || []).map(
+            (p: any) => ({
+              user_id: p.user_id,
+              name: p.user_profiles?.name || null,
+            })
+          ),
+        }));
+        setMatches(matchesWithProfiles as Match[]);
+      }
+      setLoadingMatches(false);
+    }
+    fetchMatches();
+  }, []);
 
   if (loading) {
     return (
@@ -63,25 +252,78 @@ export default function Home() {
     );
   }
 
-  // Return a loading state or null instead of navigating directly
   if (!user) {
     return null;
   }
 
   return (
     <Container>
-      <Title>Welcome to VolleyMate</Title>
-      
-      <UserInfo>
-        <UserEmail>Logged in as: {user.email}</UserEmail>
-        <Button onPress={signOut}>
-          <ButtonText>Sign Out</ButtonText>
-        </Button>
-      </UserInfo>
-      
-      <Link href="/profile" style={{ color: '#007AFF', marginTop: 20 }}>
-        Go to Profile
-      </Link>
+      <ProfileButtonRow>
+        <ProfileButton onPress={() => router.push("/profile")}>
+          <Feather name="user" size={22} color="#222" />
+        </ProfileButton>
+      </ProfileButtonRow>
+      <SectionTitle>Upcoming Matches</SectionTitle>
+      <SectionSubtitle>Play some volley ball, mate!</SectionSubtitle>
+      {loadingMatches ? (
+        <ActivityIndicator
+          size="large"
+          color="#007AFF"
+          style={{ marginTop: 30 }}
+        />
+      ) : matches.length > 0 ? (
+        matches.map((match: Match) => {
+          // Show up to 4 participants, fill with 'Available' if less
+          const participants: (string | null)[] = (
+            match.match_participants || []
+          )
+            .map((p) => p.name || "Unknown")
+            .slice(0, 4);
+          while (participants.length < 4) participants.push(null);
+          return (
+            <MatchCard key={match.id}>
+              <MatchHeader>
+                <MatchTitle>{formatDateTime(match.start_time)}</MatchTitle>
+              </MatchHeader>
+              <MatchLevel>{capitalize(match.level || "Beginner")}</MatchLevel>
+              <ParticipantsRow>
+                {participants.map((name: string | null, idx: number) =>
+                  name ? (
+                    <Participant key={idx}>
+                      <Avatar>
+                        <Feather name="user" size={24} color="#7a869a" />
+                      </Avatar>
+                      <Text
+                        style={{ fontSize: 13, color: "#444", marginTop: 2 }}
+                      >
+                        {name}
+                      </Text>
+                    </Participant>
+                  ) : (
+                    <Participant key={idx}>
+                      <Feather name="plus-circle" size={38} color="#3a4a5e" />
+                      <Text
+                        style={{ fontSize: 13, color: "#444", marginTop: 2 }}
+                      >
+                        Available
+                      </Text>
+                    </Participant>
+                  )
+                )}
+              </ParticipantsRow>
+              <LocationText>Beach Mitte</LocationText>
+              <AddressText>Königsweg 18, 10715 Berlin</AddressText>
+              <JoinButton>
+                <JoinButtonText>Join</JoinButtonText>
+              </JoinButton>
+            </MatchCard>
+          );
+        })
+      ) : (
+        <Text style={{ marginTop: 30, color: "#888", fontSize: 16 }}>
+          No upcoming matches found.
+        </Text>
+      )}
     </Container>
   );
 }

@@ -100,7 +100,7 @@ export default function Profile() {
 
       <TouchableOpacity
         style={[styles.button, styles.secondaryButton]}
-        onPress={() => router.push("/")}
+        onPress={() => router.back()}
       >
         <Text style={styles.secondaryButtonText}>Back to Home</Text>
       </TouchableOpacity>
