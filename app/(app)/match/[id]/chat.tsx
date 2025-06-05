@@ -46,7 +46,15 @@ const AvatarText = styled.Text`
   font-weight: 600;
 `;
 
-const MessageList = styled(FlatList as new () => FlatList<any>)`
+// Define a type for a message
+interface ChatMessage {
+  id: string;
+  sender_id: string;
+  message: string;
+  sent_at: string;
+}
+
+const MessageListWrapper = styled.View`
   flex: 1;
   padding: 0 16px;
 `;
@@ -75,6 +83,13 @@ const MessageMeta = styled.Text`
   margin-top: 2px;
 `;
 
+const OwnMessageMeta = styled.Text`
+  font-size: 11px;
+  color: rgba(236, 233, 255, 0.8);
+  margin-top: 2px;
+  align-self: flex-end;
+`;
+
 const InputRow = styled.View`
   flex-direction: row;
   align-items: center;
@@ -95,6 +110,12 @@ const MessageInput = styled.TextInput`
 
 const SendButton = styled.TouchableOpacity`
   padding: 8px;
+`;
+
+const AvatarSpacer = styled.View`
+  width: 36px;
+  margin-left: 8px;
+  margin-right: 8px;
 `;
 
 export default function MatchChat() {
@@ -197,27 +218,47 @@ export default function MatchChat() {
       {loading && messages.length === 0 ? (
         <ActivityIndicator size="large" color="#7b61ff" style={{ flex: 1 }} />
       ) : (
-        <MessageList
-          ref={flatListRef}
-          data={messages}
-          keyExtractor={item => item.id}
-          renderItem={({ item }) => {
-            const isOwn = item.sender_id === user?.id;
-            const sender = participants.find(p => p.user_id === item.sender_id);
-            return (
-              <MessageRow isOwn={isOwn}>
-                <MessageBubble isOwn={isOwn}>
-                  <MessageText isOwn={isOwn}>{item.message}</MessageText>
-                  <MessageMeta>
-                    {sender ? sender.user_name : 'Unknown'} · {item.sent_at ? new Date(item.sent_at).toLocaleTimeString() : ''}
-                  </MessageMeta>
-                </MessageBubble>
-              </MessageRow>
-            );
-          }}
-          onContentSizeChange={() => flatListRef.current?.scrollToEnd({ animated: true })}
-          onLayout={() => flatListRef.current?.scrollToEnd({ animated: true })}
-        />
+        <MessageListWrapper>
+          <FlatList
+            ref={flatListRef}
+            data={messages as ChatMessage[]}
+            keyExtractor={(item: ChatMessage) => item.id}
+            renderItem={({ item, index }: { item: ChatMessage; index: number }) => {
+              const isOwn = item.sender_id === user?.id;
+              const sender = participants.find(p => p.user_id === item.sender_id);
+              // Determine if this is the first message in a sequence from this sender
+              const prevMsg = index > 0 ? messages[index - 1] : null;
+              const showAvatar = !prevMsg || prevMsg.sender_id !== item.sender_id;
+              return (
+                <MessageRow isOwn={isOwn}>
+                  {/* If not own message, avatar on left */}
+                  {!isOwn && showAvatar && (
+                    <UserAvatar userId={item.sender_id} size={28} style={{ marginRight: 8 }} />
+                  )}
+                  {/* If not own message and no avatar, add spacing */}
+                  {!isOwn && !showAvatar && <AvatarSpacer style={{ marginRight: 8 }} />}
+                  <MessageBubble isOwn={isOwn}>
+                    <MessageText isOwn={isOwn}>{item.message}</MessageText>
+                    {/* Only show name/meta for others */}
+                    {!isOwn && (
+                      <MessageMeta>
+                        {sender ? sender.user_name : 'Unknown'} · {item.sent_at ? new Date(item.sent_at).toLocaleTimeString() : ''}
+                      </MessageMeta>
+                    )}
+                    {/* For own messages, only show time bottom right with off-white color */}
+                    {isOwn && (
+                      <OwnMessageMeta>
+                        {item.sent_at ? new Date(item.sent_at).toLocaleTimeString() : ''}
+                      </OwnMessageMeta>
+                    )}
+                  </MessageBubble>
+                </MessageRow>
+              );
+            }}
+            onContentSizeChange={() => flatListRef.current?.scrollToEnd({ animated: true })}
+            onLayout={() => flatListRef.current?.scrollToEnd({ animated: true })}
+          />
+        </MessageListWrapper>
       )}
       <KeyboardAvoidingView
         behavior={Platform.OS === 'ios' ? 'padding' : undefined}
