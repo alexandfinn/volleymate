@@ -584,7 +584,7 @@ export default function MatchDetail() {
       </MatchCard>
       {/* Players Card below match card */}
       {(() => {
-        const maxPlayers = 4;
+        const maxPlayers = match.maximum_participants || 4;
         const playerSlots = [...(match.participants || [])].slice(0, maxPlayers);
         while (playerSlots.length < maxPlayers) playerSlots.push(null);
         return (

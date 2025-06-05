@@ -5,14 +5,14 @@ import DateTimePicker from "@react-native-community/datetimepicker";
 import { useRouter } from "expo-router";
 import React, { useEffect, useState } from "react";
 import {
-  ActivityIndicator,
-  Alert,
-  Platform,
-  ScrollView,
-  Text,
-  TextInput,
-  TouchableOpacity,
-  View,
+    ActivityIndicator,
+    Alert,
+    Platform,
+    ScrollView,
+    Text,
+    TextInput,
+    TouchableOpacity,
+    View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import styled from "styled-components/native";
@@ -163,8 +163,9 @@ export default function CreateMatch() {
   const [formData, setFormData] = useState({
     level: "Beginner",
     location_id: null as number | null,
-    start_time: new Date(),
-    end_time: new Date(new Date().getTime() + 2 * 60 * 60 * 1000), // Default to 2 hours later
+    start_time: roundToNearest15Minutes(new Date(new Date().getTime() + 2 * 60 * 60 * 1000)),
+    end_time: roundToNearest15Minutes(new Date(new Date().getTime() + 4 * 60 * 60 * 1000)), // Default to 4 hours from now
+    maximum_participants: 4,
   });
 
   const [showStartPicker, setShowStartPicker] = useState(false);
@@ -201,6 +202,7 @@ export default function CreateMatch() {
           start_time: formData.start_time.toISOString(),
           end_time: formData.end_time.toISOString(),
           owner_id: user.id,
+          maximum_participants: formData.maximum_participants,
         })
         .select()
         .single();
@@ -265,6 +267,51 @@ export default function CreateMatch() {
               </LevelButton>
             ))}
           </LevelSelector>
+        </FormGroup>
+
+        <FormGroup>
+          <Label>Maximum Players</Label>
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
+            <TouchableOpacity
+              onPress={() => {
+                if (formData.maximum_participants > 4) {
+                  setFormData({ ...formData, maximum_participants: formData.maximum_participants - 1 });
+                }
+              }}
+              style={{
+                width: 40,
+                height: 40,
+                borderRadius: 20,
+                backgroundColor: formData.maximum_participants > 4 ? '#f3f6fa' : '#f3f6fa',
+                alignItems: 'center',
+                justifyContent: 'center',
+                opacity: formData.maximum_participants > 4 ? 1 : 0.5,
+              }}
+            >
+              <Feather name="minus" size={20} color={formData.maximum_participants > 4 ? '#333' : '#999'} />
+            </TouchableOpacity>
+            <Text style={{ fontSize: 18, fontWeight: '600', color: '#333', minWidth: 40, textAlign: 'center' }}>
+              {formData.maximum_participants}
+            </Text>
+            <TouchableOpacity
+              onPress={() => {
+                if (formData.maximum_participants < 12) {
+                  setFormData({ ...formData, maximum_participants: formData.maximum_participants + 1 });
+                }
+              }}
+              style={{
+                width: 40,
+                height: 40,
+                borderRadius: 20,
+                backgroundColor: formData.maximum_participants < 12 ? '#f3f6fa' : '#f3f6fa',
+                alignItems: 'center',
+                justifyContent: 'center',
+                opacity: formData.maximum_participants < 12 ? 1 : 0.5,
+              }}
+            >
+              <Feather name="plus" size={20} color={formData.maximum_participants < 12 ? '#333' : '#999'} />
+            </TouchableOpacity>
+          </View>
         </FormGroup>
 
         <FormGroup>
