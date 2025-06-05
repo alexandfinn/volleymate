@@ -345,22 +345,16 @@ export default function MatchDetail() {
         <LocationText>{match.location?.name}</LocationText>
         <AddressText>{match.location?.address}</AddressText>
         <ParticipantsRow>
-          {participants.map((name, idx) =>
-            name ? (
-              <Participant key={idx}>
-                <UserAvatar 
-                  userId={match.participants[idx]?.user_id || ''} 
-                  size={38}
-                />
-                <AvatarText>{name}</AvatarText>
-              </Participant>
-            ) : (
-              <Participant key={idx}>
-                <Feather name="plus-circle" size={38} color="#3a4a5e" />
-                <AvatarText>Available</AvatarText>
-              </Participant>
-            )
-          )}
+          {match.participants.map((p) => (
+            <Participant key={p.user_id}>
+              <UserAvatar 
+                userId={p.user_id} 
+                size={38} 
+                showName={true}
+                name={p.user_name}
+              />
+            </Participant>
+          ))}
         </ParticipantsRow>
       </MatchCard>
       <ButtonRow>

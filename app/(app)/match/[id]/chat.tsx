@@ -1,3 +1,4 @@
+import UserAvatar from '@/components/UserAvatar';
 import { useAuth } from '@/contexts/auth';
 import { supabase } from '@/lib/supabase';
 import { Feather } from '@expo/vector-icons';
@@ -37,16 +38,6 @@ const ParticipantsRow = styled.View`
 const Participant = styled.View`
   align-items: center;
   margin-right: 18px;
-`;
-
-const Avatar = styled.View`
-  width: 38px;
-  height: 38px;
-  border-radius: 19px;
-  background: #e9eef3;
-  align-items: center;
-  justify-content: center;
-  margin-bottom: 2px;
 `;
 
 const AvatarText = styled.Text`
@@ -194,10 +185,12 @@ export default function MatchChat() {
       <ParticipantsRow>
         {participants.map((p, idx) => (
           <Participant key={p.user_id}>
-            <Avatar>
-              <Feather name="user" size={24} color="#7a869a" />
-            </Avatar>
-            <AvatarText>{p.user_name}</AvatarText>
+            <UserAvatar 
+              userId={p.user_id} 
+              size={38} 
+              showName={true}
+              name={p.user_name}
+            />
           </Participant>
         ))}
       </ParticipantsRow>

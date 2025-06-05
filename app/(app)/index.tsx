@@ -300,12 +300,9 @@ export default function Home() {
                           <UserAvatar 
                             userId={(match.participants || [])[idx]?.user_id || ''} 
                             size={38}
+                            showName={true}
+                            name={name}
                           />
-                          <Text
-                            style={{ fontSize: 13, color: "#444", marginTop: 2 }}
-                          >
-                            {name}
-                          </Text>
                         </Participant>
                       ) : (
                         <Participant key={idx}>
