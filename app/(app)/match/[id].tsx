@@ -211,21 +211,62 @@ const ChatButtonText = styled.Text`
   font-weight: 600;
 `;
 
-function formatDateTime(dateStr: string) {
-  const date = new Date(dateStr);
-  return (
-    date.toLocaleDateString(undefined, {
-      weekday: 'long',
-      month: 'long',
-      day: '2-digit',
-    }) +
-    ' | ' +
-    date.toLocaleTimeString(undefined, {
-      hour: '2-digit',
-      minute: '2-digit',
-      hour12: false,
-    })
-  );
+const PlayersCard = styled.View`
+  background: #fff;
+  border: 1px solid #e0e0e0;
+  border-radius: 12px;
+  padding: 16px 16px 16px 16px;
+  margin: 16px 16px 0 16px;
+`;
+
+const PlayersLabel = styled.Text`
+  font-size: 15px;
+  font-weight: bold;
+  color: #222;
+  margin-bottom: 8px;
+`;
+
+const PlayersRow = styled.View`
+  flex-direction: row;
+  align-items: center;
+  gap: 18px;
+`;
+
+const PlayerSlot = styled.View`
+  align-items: center;
+  width: 60px;
+`;
+
+const PlayerName = styled.Text`
+  font-size: 13px;
+  color: #666;
+  margin-top: 4px;
+  text-align: center;
+`;
+
+function formatDateTime(start: string, end: string) {
+  const startDate = new Date(start);
+  const endDate = new Date(end);
+  
+  const dateStr = startDate.toLocaleDateString(undefined, {
+    weekday: 'long',
+    month: 'long',
+    day: '2-digit',
+  });
+
+  const startTime = startDate.toLocaleTimeString(undefined, {
+    hour: '2-digit',
+    minute: '2-digit',
+    hour12: false,
+  });
+
+  const endTime = endDate.toLocaleTimeString(undefined, {
+    hour: '2-digit',
+    minute: '2-digit',
+    hour12: false,
+  });
+
+  return `${dateStr} | ${startTime} - ${endTime}`;
 }
 
 function capitalize(str: string) {
@@ -525,22 +566,38 @@ export default function MatchDetail() {
       </Header>
       <MatchCard>
         <MatchHeader>
-          <MatchTitle>{formatDateTime(match.start_time)}</MatchTitle>
+          <MatchTitle>
+            {formatDateTime(match.start_time, match.end_time)}
+          </MatchTitle>
         </MatchHeader>
         <MatchLevel>{capitalize(match.level || 'Beginner')}</MatchLevel>
-        <ParticipantsRow>
-          {match.participants.map((p) => (
-            <Participant key={p.user_id}>
-              <UserAvatar 
-                userId={p.user_id} 
-                size={38} 
-                showName={true}
-                name={p.user_name}
-              />
-            </Participant>
-          ))}
-        </ParticipantsRow>
       </MatchCard>
+      {/* Players Card below match card */}
+      {(() => {
+        const maxPlayers = 4;
+        const playerSlots = [...(match.participants || [])].slice(0, maxPlayers);
+        while (playerSlots.length < maxPlayers) playerSlots.push(null);
+        return (
+          <PlayersCard>
+            <PlayersLabel>Players</PlayersLabel>
+            <PlayersRow>
+              {playerSlots.map((p, idx) =>
+                p ? (
+                  <PlayerSlot key={p.user_id}>
+                    <UserAvatar userId={p.user_id} size={38} showName={false} />
+                    <PlayerName numberOfLines={1}>{p.user_name}</PlayerName>
+                  </PlayerSlot>
+                ) : (
+                  <PlayerSlot key={idx}>
+                    <Feather name="plus-circle" size={38} color="#aab4c8" />
+                    <PlayerName>Available</PlayerName>
+                  </PlayerSlot>
+                )
+              )}
+            </PlayersRow>
+          </PlayersCard>
+        );
+      })()}
       {match.location?.address && (() => {
         function openInMaps() {
           const query = encodeURIComponent(`${match.location?.name || ''} ${match.location?.address || ''}`);
