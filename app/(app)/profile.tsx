@@ -1,6 +1,6 @@
+import UserAvatar from "@/components/UserAvatar";
 import { useAuth } from "@/contexts/auth";
 import { supabase } from "@/lib/supabase";
-import { Feather } from "@expo/vector-icons";
 import * as ImageManipulator from "expo-image-manipulator";
 import * as ImagePicker from "expo-image-picker";
 import { router } from "expo-router";
@@ -8,7 +8,6 @@ import React, { useEffect, useState } from "react";
 import {
   ActivityIndicator,
   Alert,
-  Image,
   StyleSheet,
   Text,
   TouchableOpacity,
@@ -84,10 +83,10 @@ export default function Profile() {
 
   const uploadImage = async (uri: string) => {
     if (!user) return;
-    
+
     try {
       setUploading(true);
-      
+
       // Resize and crop the image
       const manipResult = await ImageManipulator.manipulateAsync(
         uri,
@@ -112,8 +111,7 @@ export default function Profile() {
         throw new Error(uploadError.message);
       }
 
-      setProfileImageKey(Date.now()); // Update key to force reload
-      Alert.alert("Success", "Profile picture updated successfully");
+      setProfileImageKey(Date.now());
     } catch (err: any) {
       const errorMessage = err.message || "Failed to upload image";
       setError(errorMessage);
@@ -121,11 +119,6 @@ export default function Profile() {
     } finally {
       setUploading(false);
     }
-  };
-
-  const getAvatarUrl = () => {
-    if (!user) return null;
-    return `${STORAGE_URL}/profile-images/${user.id}.jpg?key=${profileImageKey}`;
   };
 
   if (authLoading || loading) {
@@ -140,29 +133,12 @@ export default function Profile() {
     return null;
   }
 
-  const avatarUrl = getAvatarUrl();
-
   return (
     <SafeAreaView style={styles.container}>
       <Text style={styles.title}>Profile</Text>
 
       <View style={styles.avatarContainer}>
-        {avatarUrl ? (
-          <Image
-            key={profileImageKey}
-            source={{ uri: avatarUrl }}
-            style={styles.avatar}
-            onError={() => {
-              // If image fails to load, it will show the placeholder
-              setError("Failed to load profile image");
-              Alert.alert("Error", "Failed to load profile image");
-            }}
-          />
-        ) : (
-          <View style={styles.avatarPlaceholder}>
-            <Feather name="user" size={40} color="#666" />
-          </View>
-        )}
+        <UserAvatar userId={user.id} size={120} key={profileImageKey} />
         <TouchableOpacity
           style={styles.changePhotoButton}
           onPress={pickImage}
@@ -235,23 +211,9 @@ const styles = StyleSheet.create({
     alignItems: "center",
     marginBottom: 30,
   },
-  avatar: {
-    width: 120,
-    height: 120,
-    borderRadius: 60,
-    marginBottom: 10,
-  },
-  avatarPlaceholder: {
-    width: 120,
-    height: 120,
-    borderRadius: 60,
-    backgroundColor: "#f0f0f0",
-    alignItems: "center",
-    justifyContent: "center",
-    marginBottom: 10,
-  },
   changePhotoButton: {
     padding: 8,
+    marginTop: 10,
   },
   changePhotoText: {
     color: "#007AFF",

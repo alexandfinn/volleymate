@@ -1,3 +1,4 @@
+import UserAvatar from "@/components/UserAvatar";
 import { useAuth } from "@/contexts/auth";
 import { supabase } from "@/lib/supabase";
 import { Feather } from "@expo/vector-icons";
@@ -125,13 +126,7 @@ const ProfileButtonRow = styled(View)`
 `;
 
 const ProfileButton = styled(TouchableOpacity)`
-  background: #f3f6fa;
-  border-radius: 20px;
-  width: 40px;
-  height: 40px;
-  align-items: center;
-  justify-content: center;
-  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.04);
+  padding: 8px;
 `;
 
 const FloatingButton = styled(TouchableOpacity)`
@@ -249,7 +244,7 @@ export default function Home() {
     <Container>
       <ProfileButtonRow>
         <ProfileButton onPress={() => router.push("/profile")}>
-          <Feather name="user" size={22} color="#222" />
+          <UserAvatar key={user?.id} userId={user?.id || ''} size={32} />
         </ProfileButton>
       </ProfileButtonRow>
       <ScrollContainer contentContainerStyle={{ paddingBottom: 100 }}>
@@ -302,9 +297,10 @@ export default function Home() {
                     {participants.map((name: string | null, idx: number) =>
                       name ? (
                         <Participant key={idx}>
-                          <Avatar>
-                            <Feather name="user" size={24} color="#7a869a" />
-                          </Avatar>
+                          <UserAvatar 
+                            userId={(match.participants || [])[idx]?.user_id || ''} 
+                            size={38}
+                          />
                           <Text
                             style={{ fontSize: 13, color: "#444", marginTop: 2 }}
                           >
