@@ -1,5 +1,6 @@
 import { Stack } from "expo-router";
 import { AuthProvider } from "../contexts/auth";
+import { NotificationsProvider } from "../contexts/NotificationsContext";
 import { OnboardingProvider } from "../contexts/onboarding";
 
 function RootLayoutNav() {
@@ -10,7 +11,9 @@ export default function RootLayout() {
   return (
     <AuthProvider>
       <OnboardingProvider>
-        <RootLayoutNav />
+        <NotificationsProvider>
+          <RootLayoutNav />
+        </NotificationsProvider>
       </OnboardingProvider>
     </AuthProvider>
   );

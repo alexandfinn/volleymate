@@ -112,6 +112,7 @@ export type Database = {
           id: string
           level: string | null
           location: number | null
+          maximum_participants: number | null
           owner_id: string | null
           start_time: string
         }
@@ -121,6 +122,7 @@ export type Database = {
           id?: string
           level?: string | null
           location?: number | null
+          maximum_participants?: number | null
           owner_id?: string | null
           start_time: string
         }
@@ -130,6 +132,7 @@ export type Database = {
           id?: string
           level?: string | null
           location?: number | null
+          maximum_participants?: number | null
           owner_id?: string | null
           start_time?: string
         }
@@ -146,6 +149,7 @@ export type Database = {
       user_profiles: {
         Row: {
           created_at: string | null
+          expo_push_token: string | null
           gender: string | null
           id: string
           level: string | null
@@ -154,6 +158,7 @@ export type Database = {
         }
         Insert: {
           created_at?: string | null
+          expo_push_token?: string | null
           gender?: string | null
           id: string
           level?: string | null
@@ -162,6 +167,7 @@ export type Database = {
         }
         Update: {
           created_at?: string | null
+          expo_push_token?: string | null
           gender?: string | null
           id?: string
           level?: string | null
