@@ -4,7 +4,7 @@ import { supabase } from '@/lib/supabase';
 import { Feather } from '@expo/vector-icons';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useEffect, useState } from 'react';
-import { ActivityIndicator, Share } from 'react-native';
+import { ActivityIndicator, Alert, Share } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import styled from 'styled-components/native';
 
@@ -16,7 +16,13 @@ const Container = styled(SafeAreaView)`
 const Header = styled.View`
   flex-direction: row;
   align-items: center;
+  justify-content: space-between;
   padding: 16px 16px 0 16px;
+`;
+
+const HeaderLeft = styled.View`
+  flex-direction: row;
+  align-items: center;
 `;
 
 const BackButton = styled.TouchableOpacity`
@@ -27,6 +33,10 @@ const Title = styled.Text`
   font-size: 20px;
   font-weight: bold;
   color: #222;
+`;
+
+const DeleteButton = styled.TouchableOpacity`
+  padding: 8px;
 `;
 
 const MatchCard = styled.View`
@@ -141,6 +151,7 @@ interface MatchWithLocation {
   start_time: string;
   end_time: string;
   level: string | null;
+  owner_id: string | null;
   location: {
     id: number;
     name: string | null;
@@ -161,6 +172,7 @@ export default function MatchDetail() {
   const [loading, setLoading] = useState(true);
   const [joining, setJoining] = useState(false);
   const [isParticipant, setIsParticipant] = useState(false);
+  const [isOwner, setIsOwner] = useState(false);
 
   useEffect(() => {
     async function fetchMatch() {
@@ -200,6 +212,7 @@ export default function MatchDetail() {
             });
             setMatch({ ...data, participants });
             setIsParticipant(participants.some(p => p.user_id === user?.id));
+            setIsOwner(data.owner_id === user?.id);
           }
         }
       }
@@ -302,6 +315,57 @@ export default function MatchDetail() {
     }
   };
 
+  const deleteMatch = async () => {
+    if (!match) return;
+
+    Alert.alert(
+      "Delete Match",
+      "Are you sure you want to delete this match? This action cannot be undone.",
+      [
+        {
+          text: "Cancel",
+          style: "cancel"
+        },
+        {
+          text: "Delete",
+          style: "destructive",
+          onPress: async () => {
+            try {
+              // Delete all participants first (due to foreign key constraints)
+              const { error: participantsError } = await supabase
+                .from('match_participants')
+                .delete()
+                .eq('match_id', match.id);
+
+              if (participantsError) throw participantsError;
+
+              // Delete all messages
+              const { error: messagesError } = await supabase
+                .from('match_messages')
+                .delete()
+                .eq('match_id', match.id);
+
+              if (messagesError) throw messagesError;
+
+              // Finally delete the match
+              const { error: matchError } = await supabase
+                .from('matches')
+                .delete()
+                .eq('id', match.id);
+
+              if (matchError) throw matchError;
+
+              router.replace('/');
+            } catch (error) {
+              console.error('Error deleting match:', error);
+              Alert.alert('Error', 'Failed to delete match. Please try again.');
+            }
+          }
+        }
+      ]
+    );
+  };
+
   if (loading) {
     return (
       <Container>
@@ -314,10 +378,12 @@ export default function MatchDetail() {
     return (
       <Container>
         <Header>
-          <BackButton onPress={() => router.back()}>
-            <Feather name="arrow-left" size={24} color="#222" />
-          </BackButton>
-          <Title>Match not found</Title>
+          <HeaderLeft>
+            <BackButton onPress={() => router.back()}>
+              <Feather name="arrow-left" size={24} color="#222" />
+            </BackButton>
+            <Title>Match not found</Title>
+          </HeaderLeft>
         </Header>
       </Container>
     );
@@ -332,10 +398,17 @@ export default function MatchDetail() {
   return (
     <Container>
       <Header>
-        <BackButton onPress={() => router.back()}>
-          <Feather name="arrow-left" size={24} color="#222" />
-        </BackButton>
-        <Title>Match</Title>
+        <HeaderLeft>
+          <BackButton onPress={() => router.back()}>
+            <Feather name="arrow-left" size={24} color="#222" />
+          </BackButton>
+          <Title>Match</Title>
+        </HeaderLeft>
+        {isOwner && (
+          <DeleteButton onPress={deleteMatch}>
+            <Feather name="trash-2" size={20} color="#ff3b30" />
+          </DeleteButton>
+        )}
       </Header>
       <MatchCard>
         <MatchHeader>
