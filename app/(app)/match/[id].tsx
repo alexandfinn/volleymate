@@ -5,7 +5,7 @@ import { Feather } from '@expo/vector-icons';
 import * as Linking from 'expo-linking';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useEffect, useState } from 'react';
-import { ActivityIndicator, Alert, Platform, Share } from 'react-native';
+import { ActivityIndicator, Alert, Platform, Share, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import styled from 'styled-components/native';
 
@@ -148,6 +148,69 @@ const ActionButtonTextPrimary = styled(ActionButtonText)`
   color: #fff;
 `;
 
+const ChatCard = styled.View`
+  background: #fff;
+  border: 1px solid #e0e0e0;
+  border-radius: 12px;
+  padding: 16px 16px 16px 16px;
+  margin: 16px 16px 0 16px;
+`;
+
+const ChatLabel = styled.Text`
+  font-size: 15px;
+  font-weight: bold;
+  color: #222;
+  margin-bottom: 8px;
+`;
+
+const ChatMessagesList = styled.View`
+  flex-direction: column;
+  gap: 8px;
+`;
+
+const ChatMessageRow = styled.View`
+  flex-direction: row;
+  align-items: flex-start;
+`;
+
+const ChatAvatar = styled.View`
+  width: 32px;
+  height: 32px;
+  border-radius: 16px;
+  background: #e9eef3;
+  align-items: center;
+  justify-content: center;
+  margin-right: 10px;
+`;
+
+const ChatMessageContent = styled.View`
+  flex: 1;
+`;
+
+const ChatSender = styled.Text`
+  font-size: 14px;
+  color: #666;
+  font-weight: 600;
+`;
+
+const ChatMessageText = styled.Text`
+  font-size: 15px;
+  color: #222;
+`;
+
+const ChatButton = styled.TouchableOpacity`
+  border: 1.5px solid #a48fff;
+  border-radius: 8px;
+  padding: 7px 22px;
+  align-items: center;
+`;
+
+const ChatButtonText = styled.Text`
+  color: #7b61ff;
+  font-size: 16px;
+  font-weight: 600;
+`;
+
 function formatDateTime(dateStr: string) {
   const date = new Date(dateStr);
   return (
@@ -196,6 +259,8 @@ export default function MatchDetail() {
   const [joining, setJoining] = useState(false);
   const [isParticipant, setIsParticipant] = useState(false);
   const [isOwner, setIsOwner] = useState(false);
+  const [lastMessages, setLastMessages] = useState<any[]>([]);
+  const [lastMessageSenders, setLastMessageSenders] = useState<any[]>([]);
 
   useEffect(() => {
     async function fetchMatch() {
@@ -243,6 +308,31 @@ export default function MatchDetail() {
     }
     fetchMatch();
   }, [id, user?.id]);
+
+  useEffect(() => {
+    async function fetchLastMessages() {
+      const { data: messages } = await supabase
+        .from('match_messages')
+        .select('*')
+        .eq('match_id', id)
+        .order('sent_at', { ascending: false })
+        .limit(3);
+      if (messages && messages.length > 0) {
+        setLastMessages(messages.reverse());
+        // Fetch all sender profiles
+        const senderIds = Array.from(new Set(messages.map(m => m.sender_id)));
+        const { data: senderProfiles } = await supabase
+          .from('user_profiles')
+          .select('id, name')
+          .in('id', senderIds);
+        setLastMessageSenders(senderProfiles || []);
+      } else {
+        setLastMessages([]);
+        setLastMessageSenders([]);
+      }
+    }
+    fetchLastMessages();
+  }, [id]);
 
   const joinMatch = async () => {
     if (!user || !match) return;
@@ -473,6 +563,53 @@ export default function MatchDetail() {
           </LocationCard>
         );
       })()}
+      {(() => {
+        function goToChat() {
+          router.push(`/match/${match.id}/chat`);
+        }
+        return (
+          <ChatCard>
+            <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 8 }}>
+              <ChatLabel>Last Messages</ChatLabel>
+              <ChatButton onPress={goToChat} accessibilityLabel="Open chat">
+                <ChatButtonText>Chat</ChatButtonText>
+              </ChatButton>
+            </View>
+            <ChatMessagesList>
+              {lastMessages.length === 0 ? (
+                <ChatMessageRow>
+                  <ChatAvatar>
+                    <Feather name="user" size={18} color="#888" />
+                  </ChatAvatar>
+                  <ChatMessageContent>
+                    <ChatSender style={{ color: '#888' }}>No messages yet</ChatSender>
+                    <ChatMessageText>Say hello!</ChatMessageText>
+                  </ChatMessageContent>
+                </ChatMessageRow>
+              ) : (
+                lastMessages.map((msg, idx) => {
+                  const sender = lastMessageSenders.find(s => s.id === msg.sender_id);
+                  return (
+                    <ChatMessageRow key={msg.id}>
+                      {sender ? (
+                        <UserAvatar userId={sender.id} size={32} />
+                      ) : (
+                        <ChatAvatar>
+                          <Feather name="user" size={18} color="#888" />
+                        </ChatAvatar>
+                      )}
+                      <ChatMessageContent>
+                        <ChatSender>{sender ? sender.name : 'Unknown'}</ChatSender>
+                        <ChatMessageText>{msg.message}</ChatMessageText>
+                      </ChatMessageContent>
+                    </ChatMessageRow>
+                  );
+                })
+              )}
+            </ChatMessagesList>
+          </ChatCard>
+        );
+      })()}
       <ButtonRow>
         <ActionButton onPress={() => Share.share({ message: `Join my match: https://volleymate.app/match/${match.id}` })}>
           <ActionButtonText>Share match</ActionButtonText>
@@ -495,15 +632,6 @@ export default function MatchDetail() {
           </ActionButtonPrimary>
         )}
       </ButtonRow>
-      {isParticipant && (
-        <ActionButton
-          style={{ marginHorizontal: 16, marginTop: 12, flexDirection: 'row', justifyContent: 'center', alignItems: 'center', paddingVertical: 8 }}
-          onPress={() => router.push(`/match/${match.id}/chat`)}
-        >
-          <Feather name="message-circle" size={18} color="#7b61ff" style={{ marginRight: 6 }} />
-          <ActionButtonText style={{ fontSize: 15 }}>Open Match Chat</ActionButtonText>
-        </ActionButton>
-      )}
     </Container>
   );
 } 
