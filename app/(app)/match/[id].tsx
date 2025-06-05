@@ -2,9 +2,10 @@ import UserAvatar from '@/components/UserAvatar';
 import { useAuth } from '@/contexts/auth';
 import { supabase } from '@/lib/supabase';
 import { Feather } from '@expo/vector-icons';
+import * as Linking from 'expo-linking';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useEffect, useState } from 'react';
-import { ActivityIndicator, Alert, Share } from 'react-native';
+import { ActivityIndicator, Alert, Platform, Share } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import styled from 'styled-components/native';
 
@@ -65,6 +66,28 @@ const MatchLevel = styled.Text`
   font-size: 14px;
   color: #666;
   margin-bottom: 8px;
+`;
+
+const LocationCard = styled.TouchableOpacity`
+  background: #fff;
+  border: 1px solid #e0e0e0;
+  border-radius: 12px;
+  padding: 16px 16px 16px 16px;
+  margin: 16px 16px 0 16px;
+  flex-direction: row;
+  align-items: center;
+  justify-content: space-between;
+`;
+
+const LocationInfo = styled.View`
+  flex: 1;
+`;
+
+const LocationIconButton = styled.TouchableOpacity`
+  padding: 8px;
+  border-radius: 20px;
+  background: #f3f6fa;
+  margin-left: 12px;
 `;
 
 const ParticipantsRow = styled.View`
@@ -415,8 +438,6 @@ export default function MatchDetail() {
           <MatchTitle>{formatDateTime(match.start_time)}</MatchTitle>
         </MatchHeader>
         <MatchLevel>{capitalize(match.level || 'Beginner')}</MatchLevel>
-        <LocationText>{match.location?.name}</LocationText>
-        <AddressText>{match.location?.address}</AddressText>
         <ParticipantsRow>
           {match.participants.map((p) => (
             <Participant key={p.user_id}>
@@ -430,6 +451,28 @@ export default function MatchDetail() {
           ))}
         </ParticipantsRow>
       </MatchCard>
+      {match.location?.address && (() => {
+        function openInMaps() {
+          const query = encodeURIComponent(`${match.location?.name || ''} ${match.location?.address || ''}`);
+          const url = Platform.select({
+            ios: `http://maps.apple.com/?q=${query}`,
+            android: `geo:0,0?q=${query}`,
+            default: `https://www.google.com/maps/search/?api=1&query=${query}`,
+          });
+          Linking.openURL(url!);
+        }
+        return (
+          <LocationCard onPress={openInMaps} accessibilityRole="button" accessibilityLabel="Open location in Maps">
+            <LocationInfo>
+              <LocationText>{match.location?.name}</LocationText>
+              <AddressText>{match.location?.address}</AddressText>
+            </LocationInfo>
+            <LocationIconButton pointerEvents="none">
+              <Feather name="map-pin" size={22} color="#7b61ff" />
+            </LocationIconButton>
+          </LocationCard>
+        );
+      })()}
       <ButtonRow>
         <ActionButton onPress={() => Share.share({ message: `Join my match: https://volleymate.app/match/${match.id}` })}>
           <ActionButtonText>Share match</ActionButtonText>
