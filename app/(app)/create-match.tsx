@@ -5,14 +5,14 @@ import DateTimePicker from "@react-native-community/datetimepicker";
 import { useRouter } from "expo-router";
 import React, { useEffect, useState } from "react";
 import {
-    ActivityIndicator,
-    Alert,
-    Platform,
-    ScrollView,
-    Text,
-    TextInput,
-    TouchableOpacity,
-    View,
+  ActivityIndicator,
+  Alert,
+  Platform,
+  ScrollView,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import styled from "styled-components/native";
@@ -141,6 +141,17 @@ interface Location {
   name: string | null;
   address: string | null;
   city: string | null;
+}
+
+// Helper function to round time to nearest 15 minutes
+function roundToNearest15Minutes(date: Date): Date {
+  const minutes = date.getMinutes();
+  const roundedMinutes = Math.round(minutes / 15) * 15;
+  const newDate = new Date(date);
+  newDate.setMinutes(roundedMinutes);
+  newDate.setSeconds(0);
+  newDate.setMilliseconds(0);
+  return newDate;
 }
 
 export default function CreateMatch() {
@@ -306,9 +317,18 @@ export default function CreateMatch() {
               value={formData.start_time}
               mode="datetime"
               display={Platform.OS === 'ios' ? 'spinner' : 'default'}
+              minuteInterval={15}
               onChange={(event, selectedDate) => {
                 setShowStartPicker(false);
                 if (selectedDate) {
+                  if (Platform.OS === 'android') {
+                    // For Android, round to nearest 15 minutes
+                    const minutes = selectedDate.getMinutes();
+                    const roundedMinutes = Math.round(minutes / 15) * 15;
+                    selectedDate.setMinutes(roundedMinutes);
+                    selectedDate.setSeconds(0);
+                    selectedDate.setMilliseconds(0);
+                  }
                   setFormData({ ...formData, start_time: selectedDate });
                   // Update end time to be 2 hours after start time
                   setFormData(prev => ({
@@ -333,9 +353,18 @@ export default function CreateMatch() {
               mode="datetime"
               display={Platform.OS === 'ios' ? 'spinner' : 'default'}
               minimumDate={formData.start_time}
+              minuteInterval={15}
               onChange={(event, selectedDate) => {
                 setShowEndPicker(false);
                 if (selectedDate) {
+                  if (Platform.OS === 'android') {
+                    // For Android, round to nearest 15 minutes
+                    const minutes = selectedDate.getMinutes();
+                    const roundedMinutes = Math.round(minutes / 15) * 15;
+                    selectedDate.setMinutes(roundedMinutes);
+                    selectedDate.setSeconds(0);
+                    selectedDate.setMilliseconds(0);
+                  }
                   setFormData({ ...formData, end_time: selectedDate });
                 }
               }}
