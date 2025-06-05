@@ -1,5 +1,4 @@
 import { useAuth } from "@/contexts/auth";
-import { Database } from "@/database.types";
 import { supabase } from "@/lib/supabase";
 import { Feather } from "@expo/vector-icons";
 import { useFocusEffect } from "@react-navigation/native";
@@ -28,9 +27,9 @@ const SectionSubtitle = styled(Text)`
   margin-bottom: 18px;
 `;
 
-const MatchCard = styled(TouchableOpacity)`
+const MatchCard = styled(TouchableOpacity)<{ isJoined?: boolean }>`
   background: #fff;
-  border: 1px solid #e0e0e0;
+  border: 1.5px solid ${props => props.isJoined ? '#7b61ff' : '#e0e0e0'};
   border-radius: 12px;
   padding: 18px 16px 14px 16px;
   margin-bottom: 18px;
@@ -154,6 +153,15 @@ interface Participant {
   user_name: string | null;
 }
 
+interface Match {
+  id: string;
+  start_time: string;
+  level: string | null;
+  location_name: string | null;
+  location_address: string | null;
+  participants: Participant[];
+}
+
 function formatDateTime(dateStr: string) {
   const date = new Date(dateStr);
   return (
@@ -177,9 +185,7 @@ function capitalize(str: string) {
 
 export default function Home() {
   const { user, loading, signOut } = useAuth();
-  const [matches, setMatches] = useState<
-    Database["public"]["Views"]["enriched_matches_with_participants"]["Row"][]
-  >([]);
+  const [matches, setMatches] = useState<Match[]>([]);
   const [loadingMatches, setLoadingMatches] = useState(true);
   const router = useRouter();
 
@@ -202,9 +208,16 @@ export default function Home() {
         if (error || !data) {
           setMatches([]);
         } else {
-          // Flatten participants for easier rendering
-          console.log(data[0]);
-          setMatches(data);
+          // Transform the data to match our Match interface
+          const transformedMatches: Match[] = data.map(match => ({
+            id: match.id || '',
+            start_time: match.start_time || '',
+            level: match.level,
+            location_name: match.location_name,
+            location_address: match.location_address,
+            participants: (match.participants as unknown as Participant[]) || []
+          }));
+          setMatches(transformedMatches);
         }
         setLoadingMatches(false);
       }
@@ -241,53 +254,70 @@ export default function Home() {
             style={{ marginTop: 30 }}
           />
         ) : matches.length > 0 ? (
-          matches.map((match) => {
-            // Show up to 4 participants, fill with 'Available' if less
-            const participants: (string | null)[] = (
-              (match.participants || []) as unknown as Participant[]
-            )
-              .map((p: Participant) => p.user_name || "Unknown")
-              .slice(0, 4);
-            while (participants.length < 4) participants.push(null);
-            return (
-              <MatchCard 
-                key={match.id}
-                onPress={() => router.push(`/match/${match.id}`)}
-              >
-                <MatchHeader>
-                  <MatchTitle>
-                    {formatDateTime(match.start_time || "")}
-                  </MatchTitle>
-                </MatchHeader>
-                <MatchLevel>{capitalize(match.level || "Beginner")}</MatchLevel>
-                <ParticipantsRow>
-                  {participants.map((name: string | null, idx: number) =>
-                    name ? (
-                      <Participant key={idx}>
-                        <Avatar>
-                          <Feather name="user" size={24} color="#7a869a" />
-                        </Avatar>
-                        <Text
-                          style={{ fontSize: 13, color: "#444", marginTop: 2 }}
-                        >
-                          {name}
-                        </Text>
-                      </Participant>
-                    ) : (
-                      <Participant key={idx}>
-                        <Feather name="plus-circle" size={38} color="#3a4a5e" />
-                      </Participant>
-                    )
-                  )}
-                </ParticipantsRow>
-                <LocationText>{match.location_name}</LocationText>
-                <AddressText>{match.location_address}</AddressText>
-                <JoinButton>
-                  <JoinButtonText>Join Match</JoinButtonText>
-                </JoinButton>
-              </MatchCard>
-            );
-          })
+          matches
+            .sort((a, b) => {
+              // Check if current user is a participant in each match
+              const aIsJoined = (a.participants || []).some((p: Participant) => p.user_id === user?.id);
+              const bIsJoined = (b.participants || []).some((p: Participant) => p.user_id === user?.id);
+              
+              // If one is joined and the other isn't, put the joined one first
+              if (aIsJoined && !bIsJoined) return -1;
+              if (!aIsJoined && bIsJoined) return 1;
+              
+              // If both are joined or both are not joined, sort by start time
+              return new Date(a.start_time || '').getTime() - new Date(b.start_time || '').getTime();
+            })
+            .map((match) => {
+              // Show up to 4 participants, fill with 'Available' if less
+              const participants: (string | null)[] = (
+                (match.participants || []) as unknown as Participant[]
+              )
+                .map((p: Participant) => p.user_name || "Unknown")
+                .slice(0, 4);
+              while (participants.length < 4) participants.push(null);
+              
+              const isJoined = (match.participants || []).some((p: Participant) => p.user_id === user?.id);
+              
+              return (
+                <MatchCard 
+                  key={match.id}
+                  onPress={() => router.push(`/match/${match.id}`)}
+                  isJoined={isJoined}
+                >
+                  <MatchHeader>
+                    <MatchTitle>
+                      {formatDateTime(match.start_time || "")}
+                    </MatchTitle>
+                  </MatchHeader>
+                  <MatchLevel>{capitalize(match.level || "Beginner")}</MatchLevel>
+                  <ParticipantsRow>
+                    {participants.map((name: string | null, idx: number) =>
+                      name ? (
+                        <Participant key={idx}>
+                          <Avatar>
+                            <Feather name="user" size={24} color="#7a869a" />
+                          </Avatar>
+                          <Text
+                            style={{ fontSize: 13, color: "#444", marginTop: 2 }}
+                          >
+                            {name}
+                          </Text>
+                        </Participant>
+                      ) : (
+                        <Participant key={idx}>
+                          <Feather name="plus-circle" size={38} color="#3a4a5e" />
+                        </Participant>
+                      )
+                    )}
+                  </ParticipantsRow>
+                  <LocationText>{match.location_name}</LocationText>
+                  <AddressText>{match.location_address}</AddressText>
+                  <JoinButton>
+                    <JoinButtonText>Join Match</JoinButtonText>
+                  </JoinButton>
+                </MatchCard>
+              );
+            })
         ) : (
           <Text style={{ textAlign: "center", marginTop: 30, color: "#666" }}>
             No upcoming matches found
