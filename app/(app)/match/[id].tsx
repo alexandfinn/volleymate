@@ -1,3 +1,4 @@
+import UserAvatar from '@/components/UserAvatar';
 import { useAuth } from '@/contexts/auth';
 import { supabase } from '@/lib/supabase';
 import { Feather } from '@expo/vector-icons';
@@ -65,16 +66,6 @@ const ParticipantsRow = styled.View`
 const Participant = styled.View`
   align-items: center;
   margin-right: 18px;
-`;
-
-const Avatar = styled.View`
-  width: 38px;
-  height: 38px;
-  border-radius: 19px;
-  background: #e9eef3;
-  align-items: center;
-  justify-content: center;
-  margin-bottom: 2px;
 `;
 
 const AvatarText = styled.Text`
@@ -357,9 +348,10 @@ export default function MatchDetail() {
           {participants.map((name, idx) =>
             name ? (
               <Participant key={idx}>
-                <Avatar>
-                  <Feather name="user" size={24} color="#7a869a" />
-                </Avatar>
+                <UserAvatar 
+                  userId={match.participants[idx]?.user_id || ''} 
+                  size={38}
+                />
                 <AvatarText>{name}</AvatarText>
               </Participant>
             ) : (
