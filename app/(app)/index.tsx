@@ -109,6 +109,14 @@ const JoinButtonText = styled(Text)`
   font-weight: 600;
 `;
 
+const JoinedText = styled(Text)`
+  color: #7b61ff;
+  font-size: 16px;
+  font-weight: 600;
+  margin-top: 6px;
+  align-self: flex-end;
+`;
+
 const ProfileButtonRow = styled(View)`
   flex-direction: row;
   justify-content: flex-end;
@@ -312,9 +320,13 @@ export default function Home() {
                   </ParticipantsRow>
                   <LocationText>{match.location_name}</LocationText>
                   <AddressText>{match.location_address}</AddressText>
-                  <JoinButton>
-                    <JoinButtonText>Join Match</JoinButtonText>
-                  </JoinButton>
+                  {isJoined ? (
+                    <JoinedText>Joined Match</JoinedText>
+                  ) : (
+                    <JoinButton onPress={() => router.push(`/match/${match.id}`)}>
+                      <JoinButtonText>Join Match</JoinButtonText>
+                    </JoinButton>
+                  )}
                 </MatchCard>
               );
             })
