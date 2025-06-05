@@ -4,9 +4,26 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 serve(async (req) => {
   const body = await req.json();
 
-  const { match_id, user_id, event } = body;
+  const { type, record, old_record } = body;
+
+  let match_id: string | undefined;
+  let user_id: string | undefined;
+  let event: "joined" | "left" | undefined;
+
+  if (type === "INSERT") {
+    match_id = record?.match_id;
+    user_id = record?.user_id;
+    event = "joined";
+  } else if (type === "DELETE") {
+    match_id = old_record?.match_id;
+    user_id = old_record?.user_id;
+    event = "left";
+  } else {
+    return new Response("Unsupported event type", { status: 400 });
+  }
+
   if (!match_id || !user_id || !event) {
-    return new Response("Missing parameters", { status: 400 });
+    return new Response("Missing match_id or user_id", { status: 400 });
   }
 
   const supabase = createClient(
@@ -14,14 +31,12 @@ serve(async (req) => {
     Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
   );
 
-  // Get user's name (who triggered the event)
   const { data: actorProfile } = await supabase
     .from("user_profiles")
     .select("name")
     .eq("id", user_id)
     .single();
 
-  // Get other participants
   const { data: participants } = await supabase
     .from("match_participants")
     .select("user_id")
