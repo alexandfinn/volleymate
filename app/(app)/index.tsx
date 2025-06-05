@@ -162,6 +162,7 @@ interface Match {
   level: string | null;
   location_name: string | null;
   location_address: string | null;
+  maximum_participants: number | null;
   participants: Participant[];
 }
 
@@ -218,6 +219,7 @@ export default function Home() {
             level: match.level,
             location_name: match.location_name,
             location_address: match.location_address,
+            maximum_participants: match.maximum_participants,
             participants: (match.participants as unknown as Participant[]) || []
           }));
           setMatches(transformedMatches);
@@ -271,13 +273,14 @@ export default function Home() {
               return new Date(a.start_time || '').getTime() - new Date(b.start_time || '').getTime();
             })
             .map((match) => {
-              // Show up to 4 participants, fill with 'Available' if less
+              // Show up to max participants, fill with 'Available' if less
+              const maxPlayers = match.maximum_participants || 4;
               const participants: (string | null)[] = (
                 (match.participants || []) as unknown as Participant[]
               )
                 .map((p: Participant) => p.user_name || "Unknown")
-                .slice(0, 4);
-              while (participants.length < 4) participants.push(null);
+                .slice(0, maxPlayers);
+              while (participants.length < maxPlayers) participants.push(null);
               
               const isJoined = (match.participants || []).some((p: Participant) => p.user_id === user?.id);
               

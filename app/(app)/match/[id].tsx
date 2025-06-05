@@ -232,7 +232,7 @@ const PlayersRow = styled.View`
   gap: 18px;
 `;
 
-const PlayerSlot = styled.View`
+const PlayerSlot = styled.TouchableOpacity`
   align-items: center;
   width: 60px;
 `;
@@ -590,7 +590,7 @@ export default function MatchDetail() {
         return (
           <PlayersCard>
             <PlayersLabel>Players</PlayersLabel>
-            <PlayersRow>
+            <PlayersRow style={{ flexWrap: 'wrap', justifyContent: 'flex-start' }}>
               {playerSlots.map((p, idx) =>
                 p ? (
                   <PlayerSlot key={p.user_id}>
@@ -598,8 +598,16 @@ export default function MatchDetail() {
                     <PlayerName numberOfLines={1}>{p.user_name}</PlayerName>
                   </PlayerSlot>
                 ) : (
-                  <PlayerSlot key={idx}>
-                    <Feather name="plus-circle" size={38} color="#aab4c8" />
+                  <PlayerSlot 
+                    key={idx} 
+                    onPress={joinMatch}
+                    disabled={joining || isParticipant}
+                  >
+                    {joining ? (
+                      <ActivityIndicator size="small" color="#7b61ff" />
+                    ) : (
+                      <Feather name="plus-circle" size={38} color="#aab4c8" />
+                    )}
                     <PlayerName>Available</PlayerName>
                   </PlayerSlot>
                 )
