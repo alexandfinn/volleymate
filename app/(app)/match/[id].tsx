@@ -279,6 +279,7 @@ interface MatchWithLocation {
   end_time: string;
   level: string | null;
   owner_id: string | null;
+  maximum_participants: number | null;
   location: {
     id: number;
     name: string | null;
@@ -570,7 +571,16 @@ export default function MatchDetail() {
             {formatDateTime(match.start_time, match.end_time)}
           </MatchTitle>
         </MatchHeader>
-        <MatchLevel>{capitalize(match.level || 'Beginner')}</MatchLevel>
+        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 16, marginBottom: 12, marginTop: 4 }}>
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+            <Feather name="trending-up" size={18} color="#666" />
+            <MatchLevel style={{ fontSize: 15 }}>{capitalize(match.level || 'Beginner')}</MatchLevel>
+          </View>
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+            <Feather name="users" size={18} color="#666" />
+            <MatchLevel style={{ fontSize: 15 }}>Max. {match.maximum_participants || 4} players</MatchLevel>
+          </View>
+        </View>
       </MatchCard>
       {/* Players Card below match card */}
       {(() => {
